@@ -65,20 +65,23 @@ static int uart_init(void)
     return 0;
 }
 
-/* Callback de escaneo BLE */
+/* Callback de escaneo BLE*/
 static void scan_cb(const bt_addr_le_t *addr, int8_t rssi,
                    uint8_t adv_type, struct net_buf_simple *buf)
 {
+    /* Almacena los datos del advertisement */
     struct raw_adv_data adv_data = {0};
     
-    memcpy(adv_data.addr, addr->a.val, sizeof(adv_data.addr));
-    adv_data.addr_type = addr->type;
-    adv_data.adv_type = adv_type;
-    adv_data.rssi = rssi;
+    memcpy(adv_data.addr, addr->a.val, sizeof(adv_data.addr)); // Dirección MAC
+    adv_data.addr_type = addr->type; // Tipo de dirección
+    adv_data.adv_type = adv_type; // Tipo Advertisiement
+    adv_data.rssi = rssi; // RSSI
+
+    /* Calcula y limita la longitud de los datos */
     adv_data.data_len = MIN(buf->len, sizeof(adv_data.data));
+    /* Copia los datos del advertisement */
     memcpy(adv_data.data, buf->data, adv_data.data_len);
-    
-    /* Send the data directly through UART */
+    /* Envía a través del UART */
     send_uart_message(&adv_data);
 }
 
