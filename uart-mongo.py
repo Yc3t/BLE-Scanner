@@ -4,7 +4,7 @@ from pymongo import MongoClient
 from uart import UARTReceiver
 
 class UARTMongoReceiver(UARTReceiver):
-    def __init__(self, port='COM9', baudrate=115200, 
+    def __init__(self, port='COM20', baudrate=115200, 
                  mongo_uri="mongodb://localhost:27017/"):
         """Inicializa el receptor UART con MongoDB"""
         super().__init__(port, baudrate)
@@ -31,16 +31,16 @@ class UARTMongoReceiver(UARTReceiver):
             
             # Inserta en MongoDB
             result = self.collection.insert_one(document)
-            print(f"Mensaje almacenado en MongoDB (ID: {result.inserted_id})")
+            print(f"Mensaje almacenado en la base de datos (ID: {result.inserted_id})")
             
             return True
         except Exception as e:
-            print(f"Error almacenando en MongoDB: {e}")
+            print(f"Error almacenando en la base de datos: {e}")
             return False
 
     def receive_messages(self):
-        """Sobrescribe el método de recepción para incluir almacenamiento"""
-        print("Iniciando recepción de mensajes con almacenamiento MongoDB...")
+        """Método para recibir y almacenar"""
+        print("Iniciando recepción de mensajes...")
         
         while True:
             try:
@@ -87,9 +87,9 @@ class UARTMongoReceiver(UARTReceiver):
         self.client.close()  # Cierra la conexión MongoDB
 
 if __name__ == "__main__":
-    try:5
+    try:
         receiver = UARTMongoReceiver(
-            port='COM9',
+            port='COM20',
             mongo_uri="mongodb://localhost:27017/"
         )
         receiver.receive_messages()
