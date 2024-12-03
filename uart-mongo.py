@@ -29,7 +29,7 @@ class UARTMongoReceiver(UARTReceiver):
                 'data': message['data'].hex(),  # Convierte bytes a string hex
             }
             
-            # Inserta en MongoDB
+            # Inserta en la base de datos
             result = self.collection.insert_one(document)
             print(f"Mensaje almacenado en la base de datos (ID: {result.inserted_id})")
             
@@ -60,7 +60,7 @@ class UARTMongoReceiver(UARTReceiver):
                 if message:
                     self._check_sequence(message['sequence'])
                     
-                    # Almacena en MongoDB
+                    # Almacena el mensage
                     self._store_message(message)
                     
                     # Imprime información del mensaje
