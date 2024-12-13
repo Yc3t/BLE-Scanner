@@ -89,7 +89,7 @@ class UARTMongoReceiver(UARTReceiver):
 if __name__ == "__main__":
     try:
         receiver = UARTMongoReceiver(
-            port='COM20',
+            port='COM21',
             mongo_uri="mongodb://localhost:27017/"
         )
         receiver.receive_messages()

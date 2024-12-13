@@ -3,7 +3,7 @@ import struct
 from datetime import datetime
 
 class UARTReceiver:
-    def __init__(self, port='COM9', baudrate=115200):
+    def __init__(self, port='COM21', baudrate=115200):
         """Inicializa el receptor UART"""
         self.serial = serial.Serial(port, baudrate)
         self.sequence = 0  # Para detectar pérdida de mensajes
@@ -55,8 +55,9 @@ class UARTReceiver:
             message['adv_type'] = data[offset]
             offset += 1
 
-            # RSSI viene como valor negativo
-            message['rssi'] = -data[offset]
+            # RSSI conversion from two's complement
+            rssi_byte = data[offset]
+            message['rssi'] = -(256 - rssi_byte) if rssi_byte > 127 else -rssi_byte
             offset += 1
 
             message['data_len'] = data[offset]
@@ -126,7 +127,7 @@ class UARTReceiver:
 
 if __name__ == "__main__":
     try:
-        receiver = UARTReceiver(port='COM20')  
+        receiver = UARTReceiver(port='COM21')  
         receiver.receive_messages()
     except Exception as e:
         print(f"Error: {e}")
