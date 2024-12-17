@@ -12,7 +12,7 @@ class UARTMongoReceiver(UARTReceiver):
         # Conexión a MongoDB
         self.client = MongoClient(mongo_uri)
         self.db = self.client.ble_scanner
-        self.collection = self.db.advertisements
+        self.collection = self.db.adv_5_min
 
     def _store_message(self, message):
         """Almacena el mensaje en MongoDB"""
@@ -89,7 +89,7 @@ class UARTMongoReceiver(UARTReceiver):
 if __name__ == "__main__":
     try:
         receiver = UARTMongoReceiver(
-            port='COM21',
+            port='COM16',
             mongo_uri="mongodb://localhost:27017/"
         )
         receiver.receive_messages()
