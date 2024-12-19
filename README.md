@@ -1,4 +1,4 @@
-# BLE Scanner Data Pipeline
+# BLE Scanner 
 
 Este proyecto implementa un sistema de escaneo BLE (Bluetooth Low Energy) con almacenamiento de datos. El sistema consta de dos componentes principales:
 
