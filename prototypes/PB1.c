@@ -23,47 +23,52 @@ struct __packed device_data {
 
 struct __packed buffer_header {
     uint8_t header[UART_HEADER_LENGTH];    /* [0x55, 0x55, 0x55, 0x55] */
-    uint8_t sequence;                      /* Numero de secuencia*/
-    uint16_t n_adv_raw;                    /* Contador eventos de recepción */
-    uint8_t n_mac;                         /* Nº MACs unicas en un buffer */
+    uint8_t type;                          /* Message Type */
+    uint8_t sequence;                      /* Sequence Number */
+    uint16_t n_adv_raw;                    /* Total reception events counter */
+    uint8_t n_mac;                         /* Number of unique MACs in buffer */
+    uint32_t timestamp;                    /* Timestamp or Interval ID */
 };
 
-/* Configuración del buffer */
+/* Buffer configuration */
 #define MAX_DEVICES 50
-#define SAMPLING_INTERVAL_MS 5000  // 5 sec
+#define SAMPLING_INTERVAL_MS 5000  // 5 seconds
 
-/*Variables globales buffer*/
+/* Global buffer variables */
 static struct device_data device_buffer[MAX_DEVICES];
 static struct buffer_header buffer_header;
 static bool buffer_active = false;
+
+/* Definiciones para el protocolo UART */
+#define UART_HEADER_MAGIC      0x55    /* Patrón de sincronización: 01010101 */
+#define UART_HEADER_LENGTH     4       /* Longitud de la cabecera */
+#define MSG_TYPE_ADV_DATA      0x01    /* Tipo mensaje: datos advertisement */
 
 static const struct device *uart_dev; // Puntero al dispositivo UART
 
 static uint8_t msg_sequence = 0; //Contador de secuencia
 
-/* Ver si añadir o actualizar dispositivo */
+/* Function to find device in buffer or get new slot */
 static struct device_data *find_or_add_device(const bt_addr_le_t *addr) {
-    //Buscar si ya está en el buffer
+    // First, try to find existing device
     for (int i = 0; i < buffer_header.n_mac; i++) {
-        //comparar dirección en el buffer con la nueva dirección
         if (memcmp(device_buffer[i].addr, addr->a.val, 6) == 0) {
             return &device_buffer[i];
         }
     }
     
-    // Si no se ha encontrado, añadir nuevo dispositivo
+    // If not found and buffer has space, add new device
     if (buffer_header.n_mac < MAX_DEVICES) {
-        //Añadimos un nuevo dispositivo en el device buffer(incrementando la posicion usando n_mac)
         struct device_data *new_device = &device_buffer[buffer_header.n_mac++];
         memcpy(new_device->addr, addr->a.val, 6);
         new_device->n_adv = 0;
         return new_device;
-}
+    }
     
     return NULL;
 }
 
-//Función de escaneo
+/* Modified scan callback */
 static void scan_cb(const bt_addr_le_t *addr, int8_t rssi,
                    uint8_t adv_type, struct net_buf_simple *buf)
 {
@@ -73,13 +78,12 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi,
 
     buffer_header.n_adv_raw++;
 
-    //cogemos el dispositivo escaneado y vemos si es nuevo o no
     struct device_data *device = find_or_add_device(addr);
     if (device == NULL) {
-        return; // Buffer lleno
+        return; // Buffer is full
     }
 
-    // Actualizar los datos del dispositivo
+    // Update device data
     device->addr_type = addr->type;
     device->adv_type = adv_type;
     device->rssi = rssi;
@@ -88,15 +92,15 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi,
     device->n_adv++;
 }
 
-//Enviar el buffer
+/* Function to send buffer contents */
 static void send_buffer(void) {
-    // Header
+    // Send header
     const uint8_t *header_data = (const uint8_t *)&buffer_header;
     for (size_t i = 0; i < sizeof(struct buffer_header); i++) {
         uart_poll_out(uart_dev, header_data[i]);
     }
 
-    // Datos
+    // Send device data
     for (size_t i = 0; i < buffer_header.n_mac; i++) {
         const uint8_t *device_data = (const uint8_t *)&device_buffer[i];
         for (size_t j = 0; j < sizeof(struct device_data); j++) {
@@ -105,22 +109,24 @@ static void send_buffer(void) {
     }
 }
 
-/* Resetear buffer */
+/* Function to reset buffer */
 static void reset_buffer(void) {
     memset(&buffer_header, 0, sizeof(struct buffer_header));
     memset(device_buffer, 0, sizeof(device_buffer));
     memset(buffer_header.header, UART_HEADER_MAGIC, UART_HEADER_LENGTH);
+    buffer_header.type = MSG_TYPE_ADV_DATA;
     buffer_header.sequence = msg_sequence++;
+    buffer_header.timestamp = k_uptime_get_32();
 }
 
-/* Timer handler */
+/* Timer work handler */
 static void sampling_timer_handler(struct k_work *work) {
     buffer_active = false;
     
-    // Enviar buffer actual 
+    // Send current buffer
     send_buffer();
     
-    // Resetear buffer para el próximo intervalo
+    // Reset buffer for next interval
     reset_buffer();
     
     // Restart sampling
@@ -152,7 +158,7 @@ static int uart_init(void)
 static struct bt_le_scan_param scan_param = {
     .type       = BT_LE_SCAN_TYPE_PASSIVE,
     .options    = BT_LE_SCAN_OPT_NONE,
-    .interval   = BT_GAP_SCAN_FAST_INTERVAL,
+    .interval   = BT_GAP_INIT_CONN_INT_MIN,
     .window     = BT_GAP_SCAN_FAST_WINDOW,
 };
 

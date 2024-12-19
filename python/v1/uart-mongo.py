@@ -12,36 +12,26 @@ class UARTMongoReceiver(UARTReceiver):
         # Conexión a MongoDB
         self.client = MongoClient(mongo_uri)
         self.db = self.client.ble_scanner
-        self.collection = self.db.adv_buffer1
+        self.collection = self.db.adv_5_min
 
-    def _store_buffer(self, header, devices):
-        """Almacena el buffer completo en MongoDB"""
+    def _store_message(self, message):
+        """Almacena el mensaje en MongoDB"""
         try:
             # Prepara el documento para MongoDB
             document = {
                 'timestamp': datetime.now(),
-                'sequence': header['sequence'],
-                'n_adv_raw': header['n_adv_raw'],
-                'n_mac': header['n_mac'],
-                'devices': []
+                'sequence': message['sequence'],
+                'mac': message['mac'],
+                'addr_type': message['addr_type'],
+                'adv_type': message['adv_type'],
+                'rssi': message['rssi'],
+                'data_len': message['data_len'],
+                'data': message['data'].hex(),  # Convierte bytes a string hex
             }
-
-            # Añade los dispositivos
-            for device in devices:
-                device_doc = {
-                    'mac': device['mac'],
-                    'addr_type': device['addr_type'],
-                    'adv_type': device['adv_type'],
-                    'rssi': device['rssi'],
-                    'data_len': device['data_len'],
-                    'data': device['data'].hex(),
-                    'n_adv': device['n_adv']
-                }
-                document['devices'].append(device_doc)
             
             # Inserta en la base de datos
             result = self.collection.insert_one(document)
-            print(f"Buffer almacenado en la base de datos (ID: {result.inserted_id})")
+            print(f"Mensaje almacenado en la base de datos (ID: {result.inserted_id})")
             
             return True
         except Exception as e:
@@ -49,8 +39,8 @@ class UARTMongoReceiver(UARTReceiver):
             return False
 
     def receive_messages(self):
-        """Recibe y almacena buffers"""
-        print("Iniciando recepción de buffers...")
+        """Método para recibir y almacenar"""
+        print("Iniciando recepción de mensajes...")
         
         while True:
             try:
@@ -61,30 +51,25 @@ class UARTMongoReceiver(UARTReceiver):
                         if potential_header == self.HEADER_MAGIC:
                             break
 
-                # Lee y parsea la cabecera
-                header_data = potential_header + self.serial.read(self.HEADER_LENGTH - 4)
-                header = self._parse_header(header_data)
-                
-                if not header:
-                    continue
+                # Lee el resto del mensaje
+                remaining_data = self.serial.read(self.TOTAL_LENGTH - 4)
+                full_message = potential_header + remaining_data
 
-                # Lee todos los dispositivos
-                devices = []
-                for _ in range(header['n_mac']):
-                    device_data = self.serial.read(self.DEVICE_LENGTH)
-                    device = self._parse_device(device_data)
-                    if device:
-                        devices.append(device)
-
-                # Almacena el buffer completo
-                if devices:
-                    self._store_buffer(header, devices)
+                # Parsea y procesa el mensaje
+                message = self._parse_message(full_message)
+                if message:
+                    self._check_sequence(message['sequence'])
                     
-                    print("\n=== Buffer Almacenado ===")
+                    # Almacena el mensage
+                    self._store_message(message)
+                    
+                    # Imprime información del mensaje
+                    print("\n=== Mensaje Recibido y Almacenado ===")
                     print(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
-                    print(f"Secuencia: {header['sequence']}")
-                    print(f"Dispositivos: {len(devices)}")
-                    print("=====================\n")
+                    print(f"Secuencia: {message['sequence']}")
+                    print(f"MAC: {message['mac']}")
+                    print(f"RSSI: {message['rssi']} dBm")
+                    print("================================\n")
 
             except serial.SerialException as e:
                 print(f"Error de comunicación serial: {e}")
@@ -104,7 +89,7 @@ class UARTMongoReceiver(UARTReceiver):
 if __name__ == "__main__":
     try:
         receiver = UARTMongoReceiver(
-            port='COM20',
+            port='COM16',
             mongo_uri="mongodb://localhost:27017/"
         )
         receiver.receive_messages()

@@ -6,69 +6,91 @@ class UARTReceiver:
     def __init__(self, port='COM21', baudrate=115200):
         """Inicializa el receptor UART"""
         self.serial = serial.Serial(port, baudrate)
-        self.sequence = 0  # Para detectar pérdida de mensajes
+        self.sequence = 0
         
-        # Formato del mensaje
+        # Formato del buffer header
         self.HEADER_MAGIC = b'\x55\x55\x55\x55'
-        self.MESSAGE_FORMAT = {
-            'header': 4,      # 4 bytes de cabecera
-            'type': 1,       # 1 byte tipo mensaje
-            'sequence': 1,    # 1 byte número secuencia
-            'mac': 6,        # 6 bytes dirección MAC
-            'addr_type': 1,  # 1 byte tipo dirección
-            'adv_type': 1,   # 1 byte tipo advertisement
-            'rssi': 1,       # 1 byte RSSI
-            'data_len': 1,   # 1 byte longitud datos
-            'data': 31,      # 31 bytes datos
+        self.HEADER_FORMAT = {
+            'header': 4,       # Magic bytes
+            'sequence': 1,     # Sequence number
+            'n_adv_raw': 2,    # Total advertisements counter
+            'n_mac': 1,        # Number of unique MACs
         }
-        self.TOTAL_LENGTH = sum(self.MESSAGE_FORMAT.values())
+        
+        # Formato de cada device_data
+        self.DEVICE_FORMAT = {
+            'mac': 6,         # MAC address
+            'addr_type': 1,   # Address type
+            'adv_type': 1,    # Advertisement type
+            'rssi': 1,        # RSSI value
+            'data_len': 1,    # Data length
+            'data': 31,       # Advertisement data
+            'n_adv': 1,       # Number of advertisements from this MAC
+        }
+        
+        self.HEADER_LENGTH = sum(self.HEADER_FORMAT.values())
+        self.DEVICE_LENGTH = sum(self.DEVICE_FORMAT.values())
+
     def _check_header(self, data):
         """Verifica la cabecera del mensaje"""
         return data[:4] == self.HEADER_MAGIC
 
-    def _parse_message(self, data):
-        """Parsea el mensaje recibido"""
+    def _parse_header(self, data):
+        """Parsea la cabecera del buffer"""
         try:
             offset = 0
-            message = {}
+            header = {}
             
-            # Verifica cabecera
+            # Verifica cabecera mágica
             if not self._check_header(data):
                 return None
             offset += 4
 
-            # Tipo de mensaje
-            message['type'] = data[offset]
+            header['sequence'] = data[offset]
             offset += 1
 
-            # Número de secuencia
-            message['sequence'] = data[offset]
-            offset += 1
+            header['n_adv_raw'] = struct.unpack('<H', data[offset:offset+2])[0]
+            offset += 2
 
-            # Datos del advertisement
-            message['mac'] = ':'.join(f'{b:02X}' for b in data[offset:offset+6])
-            offset += 6
-
-            message['addr_type'] = data[offset]
-            offset += 1
-
-            message['adv_type'] = data[offset]
-            offset += 1
-
-            # RSSI conversion from two's complement
-            rssi_byte = data[offset]
-            message['rssi'] = -(256 - rssi_byte) if rssi_byte > 127 else -rssi_byte
-            offset += 1
-
-            message['data_len'] = data[offset]
-            offset += 1
-
-            message['data'] = data[offset:offset+31]
+            header['n_mac'] = data[offset]
             
-            return message
+            return header
 
         except Exception as e:
-            print(f"Error parseando mensaje: {e}")
+            print(f"Error parsing header: {e}")
+            return None
+
+    def _parse_device(self, data):
+        """Parsea los datos de un dispositivo"""
+        try:
+            offset = 0
+            device = {}
+            
+            device['mac'] = ':'.join(f'{b:02X}' for b in data[offset:offset+6])
+            offset += 6
+
+            device['addr_type'] = data[offset]
+            offset += 1
+
+            device['adv_type'] = data[offset]
+            offset += 1
+
+            rssi_byte = data[offset]
+            device['rssi'] = -(256 - rssi_byte) if rssi_byte > 127 else -rssi_byte
+            offset += 1
+
+            device['data_len'] = data[offset]
+            offset += 1
+
+            device['data'] = data[offset:offset+31]
+            offset += 31
+
+            device['n_adv'] = data[offset]
+            
+            return device
+
+        except Exception as e:
+            print(f"Error parsing device data: {e}")
             return None
 
     def _check_sequence(self, received_seq):
@@ -90,25 +112,31 @@ class UARTReceiver:
                         if potential_header == self.HEADER_MAGIC:
                             break
 
-                # Lee el resto del mensaje
-                remaining_data = self.serial.read(self.TOTAL_LENGTH - 4)
-                full_message = potential_header + remaining_data
+                # Lee y parsea la cabecera
+                header_data = potential_header + self.serial.read(self.HEADER_LENGTH - 4)
+                header = self._parse_header(header_data)
+                
+                if not header:
+                    continue
 
-                # Parsea y procesa el mensaje
-                message = self._parse_message(full_message)
-                if message:
-                    self._check_sequence(message['sequence'])
+                print("\n=== Buffer Recibido ===")
+                print(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
+                print(f"Secuencia: {header['sequence']}")
+                print(f"Total Advertisements: {header['n_adv_raw']}")
+                print(f"Número de MACs: {header['n_mac']}")
+                print("====================\n")
+
+                # Lee y parsea cada dispositivo
+                for i in range(header['n_mac']):
+                    device_data = self.serial.read(self.DEVICE_LENGTH)
+                    device = self._parse_device(device_data)
                     
-                    # Imprime información del mensaje
-                    print("\n=== Mensaje Recibido ===")
-                    print(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
-                    print(f"Secuencia: {message['sequence']}")
-                    print(f"MAC: {message['mac']}")
-                    print(f"Tipo Addr: {message['addr_type']}")
-                    print(f"Tipo Adv: {message['adv_type']}")
-                    print(f"RSSI: {message['rssi']} dBm")
-                    print(f"Longitud datos: {message['data_len']}")
-                    print("====================\n")
+                    if device:
+                        print(f"Dispositivo {i+1}:")
+                        print(f"  MAC: {device['mac']}")
+                        print(f"  RSSI: {device['rssi']} dBm")
+                        print(f"  Advertisements: {device['n_adv']}")
+                        print("--------------------")
 
             except serial.SerialException as e:
                 print(f"Error de comunicación serial: {e}")
