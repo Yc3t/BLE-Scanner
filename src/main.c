@@ -127,9 +127,9 @@ static void sampling_timer_handler(struct k_work *work) {
     buffer_active = true;
 }
 
+//work item para ejecutar el buffer cuando expire el tiempo
 K_WORK_DEFINE(sampling_work, sampling_timer_handler);
 
-/* Timer expiry function */
 static void timer_expiry_function(struct k_timer *timer) {
     k_work_submit(&sampling_work);
 }
@@ -176,11 +176,11 @@ int main(void)
         return err;
     }
 
-    // Initialize buffer
+    // Inicializa buffer
     reset_buffer();
     buffer_active = true;
 
-    // Start timer for sampling intervals
+    // Empezar intervalo de muestreo
     k_timer_start(&sampling_timer, K_MSEC(SAMPLING_INTERVAL_MS), 
                  K_MSEC(SAMPLING_INTERVAL_MS));
 
