@@ -10,15 +10,15 @@ LOG_MODULE_REGISTER(ble_scanner, LOG_LEVEL_INF);
 #define UART_HEADER_LENGTH     4       /* Longitud de la cabecera */
 #define MSG_TYPE_ADV_DATA      0x01 
 
-/* Buffer structures */
+/*Estructuras Buffer */
 struct __packed device_data {
-    uint8_t addr[6];          /* MAC Address */
-    uint8_t addr_type;        /* Address Type */
-    uint8_t adv_type;         /* Advertisement Type */
-    int8_t  rssi;            /* RSSI Value */
-    uint8_t data_len;        /* Data Length */
-    uint8_t data[31];        /* Advertisement Data */
-    uint8_t n_adv;           /* Number of advertisements from this MAC */
+    uint8_t addr[6];          /* Dirección MAC */
+    uint8_t addr_type;        /* Tipo de dirección */
+    uint8_t adv_type;         /* Tipo de advertisement */
+    int8_t  rssi;            /* Valor RSSI */
+    uint8_t data_len;        /* Longitud de datos */
+    uint8_t data[31];        /* Datos del advertisement */
+    uint8_t n_adv;           /* Número de advertisements de esta MAC */
 };
 
 struct __packed buffer_header {
@@ -50,14 +50,19 @@ static uint8_t msg_sequence = 0; //Contador de secuencia
 
 /* Function to find device in buffer or get new slot */
 static struct device_data *find_or_add_device(const bt_addr_le_t *addr) {
-    // First, try to find existing device
+    // Buscar dispositivo existente
     for (int i = 0; i < buffer_header.n_mac; i++) {
         if (memcmp(device_buffer[i].addr, addr->a.val, 6) == 0) {
             return &device_buffer[i];
         }
     }
     
-    // If not found and buffer has space, add new device
+    // Verificar límites antes de añadir nuevo dispositivo
+    if (buffer_header.n_mac >= 255) {
+        LOG_WRN("Buffer lleno: N_MAC = 255");
+        return NULL;
+    }
+    
     if (buffer_header.n_mac < MAX_DEVICES) {
         struct device_data *new_device = &device_buffer[buffer_header.n_mac++];
         memcpy(new_device->addr, addr->a.val, 6);
@@ -65,6 +70,7 @@ static struct device_data *find_or_add_device(const bt_addr_le_t *addr) {
         return new_device;
     }
     
+    LOG_WRN("Buffer lleno: MAX_DEVICES alcanzado");
     return NULL;
 }
 
@@ -116,6 +122,8 @@ static void reset_buffer(void) {
     memset(buffer_header.header, UART_HEADER_MAGIC, UART_HEADER_LENGTH);
     buffer_header.type = MSG_TYPE_ADV_DATA;
     buffer_header.sequence = msg_sequence++;
+    buffer_header.n_mac = 0;     // Explícito
+    buffer_header.n_adv_raw = 0; // Explícito
     buffer_header.timestamp = k_uptime_get_32();
 }
 
@@ -156,11 +164,11 @@ static int uart_init(void)
 
 /* Parámetros de escaneo BLE */
 static struct bt_le_scan_param scan_param = {
-    .type       = BT_LE_SCAN_TYPE_PASSIVE,
-    .options    = BT_LE_SCAN_OPT_NONE,
-    .interval   = BT_GAP_INIT_CONN_INT_MIN,
-    .window     = BT_GAP_SCAN_FAST_WINDOW,
-};
+   .type       = BT_LE_SCAN_TYPE_PASSIVE,
+   .options    = BT_LE_SCAN_OPT_NONE,
+   .interval   = BT_GAP_ADV_FAST_INT_MIN_2,  // 0x00a0 (100ms)
+   .window     = BT_GAP_ADV_FAST_INT_MIN_2   // 0x00a0 (100ms)
+;
 
 int main(void)
 {

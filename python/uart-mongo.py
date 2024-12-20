@@ -1,5 +1,7 @@
 import serial
 from datetime import datetime
+import time
+import argparse
 from pymongo import MongoClient
 from uart import UARTReceiver
 
@@ -17,7 +19,6 @@ class UARTMongoReceiver(UARTReceiver):
     def _store_buffer(self, header, devices):
         """Almacena el buffer completo en MongoDB"""
         try:
-            # Prepara el documento para MongoDB
             document = {
                 'timestamp': datetime.now(),
                 'sequence': header['sequence'],
@@ -26,7 +27,6 @@ class UARTMongoReceiver(UARTReceiver):
                 'devices': []
             }
 
-            # Añade los dispositivos
             for device in devices:
                 device_doc = {
                     'mac': device['mac'],
@@ -39,21 +39,29 @@ class UARTMongoReceiver(UARTReceiver):
                 }
                 document['devices'].append(device_doc)
             
-            # Inserta en la base de datos
             result = self.collection.insert_one(document)
             print(f"Buffer almacenado en la base de datos (ID: {result.inserted_id})")
-            
             return True
         except Exception as e:
             print(f"Error almacenando en la base de datos: {e}")
             return False
 
-    def receive_messages(self):
-        """Recibe y almacena buffers"""
+    def receive_messages(self, duration=None):
+        """Recibe y almacena buffers durante un tiempo específico
+        
+        Args:
+            duration (int, optional): Duración en segundos. None para ejecución indefinida.
+        """
         print("Iniciando recepción de buffers...")
+        start_time = time.time()
         
         while True:
             try:
+                # Verificar tiempo transcurrido
+                if duration and (time.time() - start_time) >= duration:
+                    print(f"\nTiempo de ejecución ({duration}s) completado")
+                    break
+
                 # Busca la cabecera
                 while True:
                     if self.serial.read() == b'\x55':
@@ -102,12 +110,24 @@ class UARTMongoReceiver(UARTReceiver):
         self.client.close()  # Cierra la conexión MongoDB
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='BLE Scanner UART MongoDB Receiver')
+    parser.add_argument('--port', type=str, default='COM20',
+                      help='Puerto serial (default: COM20)')
+    parser.add_argument('--duration', type=int,
+                      help='Duración de la captura en segundos')
+    parser.add_argument('--mongo-uri', type=str, 
+                      default="mongodb://localhost:27017/",
+                      help='URI de MongoDB (default: mongodb://localhost:27017/)')
+    
+    args = parser.parse_args()
+    
     try:
         receiver = UARTMongoReceiver(
-            port='COM20',
-            mongo_uri="mongodb://localhost:27017/"
+            port=args.port,
+            mongo_uri=args.mongo_uri
         )
-        receiver.receive_messages()
+        print(f"Iniciando captura{'.' if not args.duration else f' por {args.duration} segundos.'}")
+        receiver.receive_messages(duration=args.duration)
     except Exception as e:
         print(f"Error: {e}")
     finally:
