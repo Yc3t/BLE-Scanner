@@ -5,9 +5,21 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 
-def connect_mongodb(uri="mongodb://localhost:27017/"):
+def connect_mongodb(uri="mongodb://localhost:27017/", db_name="ble_scanner", collection_name="adv_buffer1"):
+    """
+    Connect to MongoDB and return specified collection
+    
+    Args:
+        uri (str): MongoDB connection URI
+        db_name (str): Name of the database
+        collection_name (str): Name of the collection
+    
+    Returns:
+        Collection: MongoDB collection object
+    """
     client = pymongo.MongoClient(uri)
-    return client.ble_scanner.adv_buffer1
+    db = client[db_name]
+    return db[collection_name]
 
 def query_data_by_date(collection, start_date, end_date):
     query = {

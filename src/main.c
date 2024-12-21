@@ -8,19 +8,9 @@ LOG_MODULE_REGISTER(ble_scanner, LOG_LEVEL_INF);
 
 #define UART_HEADER_MAGIC      0x55    /* Patrón de sincronización: 01010101 */
 #define UART_HEADER_LENGTH     4       /* Longitud de la cabecera */
-#define MSG_TYPE_ADV_DATA      0x01    /* Tipo mensaje: datos advertisement */
-#define MAX_DEVICES 50               /* Máximo número de dispositivos */
-#define SAMPLING_INTERVAL_MS 5000    /* Intervalo de muestreo: 5 segundos */
-#define HASH_SIZE 64                 /* Potencia de 2, mayor que 4/3 * MAX_DEVICES */
-#define HASH_MASK (HASH_SIZE - 1)    /* Máscara para operaciones módulo */
+#define MSG_TYPE_ADV_DATA      0x01 
 
-/* Estados posibles de cada entrada en la tabla hash */
-enum entry_state {
-    ENTRY_EMPTY,     // Slot nunca usado
-    ENTRY_OCCUPIED,  // Slot con datos válidos
-    ENTRY_DELETED    // Slot antes usadoo pero ahora borrado
-};
-
+/*Estructuras Buffer */
 struct __packed device_data {
     uint8_t addr[6];          /* Dirección MAC */
     uint8_t addr_type;        /* Tipo de dirección */
@@ -31,7 +21,6 @@ struct __packed device_data {
     uint8_t n_adv;           /* Número de advertisements de esta MAC */
 };
 
-/* Estructura de la cabecera del buffer */
 struct __packed buffer_header {
     uint8_t header[UART_HEADER_LENGTH];    /* [0x55, 0x55, 0x55, 0x55] */
     uint8_t sequence;                      /* Número de secuencia */
@@ -39,70 +28,48 @@ struct __packed buffer_header {
     uint8_t n_mac;                         /* Nº MACs únicas en buffer */
 };
 
-/* Estructura para cada entrada en la tabla hash */
-struct hash_entry {
-    enum entry_state state;
-    struct device_data device;
-};
+#define MAX_DEVICES 50
+#define SAMPLING_INTERVAL_MS 7000  //7 sec
 
-static struct hash_entry hash_table[HASH_SIZE];
+static struct device_data device_buffer[MAX_DEVICES];
 static struct buffer_header buffer_header;
 static bool buffer_active = false;
-static const struct device *uart_dev;
-static uint8_t msg_sequence = 0;
-static uint16_t hash_entries = 0;
 
-/* Calcular índice a partir de MAC */
-static uint32_t hash_mac(const uint8_t *mac) {
-    uint32_t hash = 0;
-    for (int i = 0; i < 6; i++) {
-        hash = (hash << 5) + hash + mac[i];  // hash * 33 + mac[i]
-    }
-    return hash & HASH_MASK;
-}
+/* Definiciones para el protocolo UART */
+#define UART_HEADER_MAGIC      0x55    /* Patrón de sincronización: 01010101 */
+#define UART_HEADER_LENGTH     4       /* Longitud de la cabecera */
+#define MSG_TYPE_ADV_DATA      0x01    /* Tipo mensaje: datos advertisement */
 
-/* Buscar o añadir dispositivo en la tabla hash */
+static const struct device *uart_dev; // Puntero al dispositivo UART
+
+static uint8_t msg_sequence = 0; //Contador de secuencia
+
 static struct device_data *find_or_add_device(const bt_addr_le_t *addr) {
-    uint32_t index = hash_mac(addr->a.val);
-    uint32_t original_index = index;
-    
-    do {
-        // Dispositivo encontrado
-        if (hash_table[index].state == ENTRY_OCCUPIED &&
-            memcmp(hash_table[index].device.addr, addr->a.val, 6) == 0) {
-            return &hash_table[index].device;
+    // Buscar dispositivo existente
+    for (int i = 0; i < buffer_header.n_mac; i++) {
+        if (memcmp(device_buffer[i].addr, addr->a.val, 6) == 0) {
+            return &device_buffer[i];
         }
-        
-        // Slot libre encontrado
-        if (hash_table[index].state != ENTRY_OCCUPIED) {
-            // Verificar límites
-            if (buffer_header.n_mac >= 255) {
-                LOG_WRN("Buffer lleno: N_MAC = 255");
-                return NULL;
-            }
-            
-            if (hash_entries >= MAX_DEVICES) {
-                LOG_WRN("Buffer lleno: MAX_DEVICES alcanzado");
-                return NULL;
-            }
-            
-            // Insertar nuevo dispositivo
-            hash_table[index].state = ENTRY_OCCUPIED;
-            memcpy(hash_table[index].device.addr, addr->a.val, 6);
-            hash_table[index].device.n_adv = 0;
-            hash_entries++;
-            buffer_header.n_mac++;
-            return &hash_table[index].device;
-        }
-        
-        // Probar siguiente slot
-        index = (index + 1) & HASH_MASK;
-    } while (index != original_index);
+    }
     
-    LOG_WRN("Tabla hash llena");
+    // Verificar límites antes de añadir nuevo dispositivo
+    if (buffer_header.n_mac >= 255) {
+        LOG_WRN("Buffer lleno: N_MAC = 255");
+        return NULL;
+    }
+    
+    if (buffer_header.n_mac < MAX_DEVICES) {
+        struct device_data *new_device = &device_buffer[buffer_header.n_mac++];
+        memcpy(new_device->addr, addr->a.val, 6);
+        new_device->n_adv = 0;
+        return new_device;
+    }
+    
+    LOG_WRN("Buffer lleno: MAX_DEVICES alcanzado");
     return NULL;
 }
 
+/* Modified scan callback */
 static void scan_cb(const bt_addr_le_t *addr, int8_t rssi,
                    uint8_t adv_type, struct net_buf_simple *buf)
 {
@@ -114,58 +81,57 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi,
 
     struct device_data *device = find_or_add_device(addr);
     if (device == NULL) {
-        return;
+        return; // Buffer is full
     }
 
-    // Actualizar datos del dispositivo
+    // Update device data
     device->addr_type = addr->type;
     device->adv_type = adv_type;
     device->rssi = rssi;
     device->data_len = MIN(buf->len, sizeof(device->data));
-    memset(device->data, 0, sizeof(device->data));
     memcpy(device->data, buf->data, device->data_len);
     device->n_adv++;
 }
 
-/* Enviar buffer por UART */
 static void send_buffer(void) {
-    // Enviar cabecera
+    // Send header
     const uint8_t *header_data = (const uint8_t *)&buffer_header;
     for (size_t i = 0; i < sizeof(struct buffer_header); i++) {
         uart_poll_out(uart_dev, header_data[i]);
     }
 
-    // Enviar solo entradas ocupadas
-    for (size_t i = 0; i < HASH_SIZE; i++) {
-        if (hash_table[i].state == ENTRY_OCCUPIED) {
-            const uint8_t *device_data = (const uint8_t *)&hash_table[i].device;
-            for (size_t j = 0; j < sizeof(struct device_data); j++) {
-                uart_poll_out(uart_dev, device_data[j]);
-            }
+    // Send device data
+    for (size_t i = 0; i < buffer_header.n_mac; i++) {
+        const uint8_t *device_data = (const uint8_t *)&device_buffer[i];
+        for (size_t j = 0; j < sizeof(struct device_data); j++) {
+            uart_poll_out(uart_dev, device_data[j]);
         }
     }
 }
 
-/* Reset del buffer */
 static void reset_buffer(void) {
     memset(&buffer_header, 0, sizeof(struct buffer_header));
-    memset(hash_table, 0, sizeof(hash_table));
+    memset(device_buffer, 0, sizeof(device_buffer));
     memset(buffer_header.header, UART_HEADER_MAGIC, UART_HEADER_LENGTH);
     buffer_header.sequence = msg_sequence++;
-    buffer_header.n_mac = 0;     // Explícito
-    buffer_header.n_adv_raw = 0; // Explícito
-    hash_entries = 0;
+    buffer_header.n_mac = 0;     
+    buffer_header.n_adv_raw = 0; 
 }
 
-/* Manejador del timer de muestreo */
+/* Timer work handler */
 static void sampling_timer_handler(struct k_work *work) {
     buffer_active = false;
+    
+    // Send current buffer
     send_buffer();
+    
+    // Reset buffer for next interval
     reset_buffer();
+    
+    // Restart sampling
     buffer_active = true;
 }
 
-/* Work item para el timer */
 K_WORK_DEFINE(sampling_work, sampling_timer_handler);
 
 static void timer_expiry_function(struct k_timer *timer) {
@@ -177,6 +143,7 @@ K_TIMER_DEFINE(sampling_timer, timer_expiry_function, NULL);
 /* Inicialización del UART */
 static int uart_init(void)
 {
+    // Obtiene UART0 mediate DeviceTree
     uart_dev = DEVICE_DT_GET(DT_NODELABEL(uart0));
     if (!device_is_ready(uart_dev)) {
         LOG_ERR("UART no está listo");
@@ -185,6 +152,7 @@ static int uart_init(void)
     return 0;
 }
 
+/* Parámetros de escaneo BLE */
 static struct bt_le_scan_param scan_param = {
     .type       = BT_LE_SCAN_TYPE_PASSIVE,
     .options    = BT_LE_SCAN_OPT_NONE,
@@ -192,36 +160,35 @@ static struct bt_le_scan_param scan_param = {
     .window     = BT_GAP_ADV_FAST_INT_MIN_2   // 0x00a0 (100ms)
 };
 
-/* Función principal */
 int main(void)
 {
     int err;
 
-    // Inicializar UART
+    /* Inicializa UART */
     err = uart_init();
     if (err) {
         LOG_ERR("Falló inicialización UART (err %d)", err);
         return err;
     }
 
-    LOG_INF("Iniciando Escáner BLE con buffer hash...");
+    LOG_INF("Iniciando Escáner BLE con buffer...");
 
-    // Inicializar Bluetooth
+    /* Inicializa Bluetooth */
     err = bt_enable(NULL);
     if (err) {
         LOG_ERR("Falló inicialización Bluetooth (err %d)", err);
         return err;
     }
 
-    // Preparar buffer y comenzar escaneo
+    // Initialize buffer
     reset_buffer();
     buffer_active = true;
 
-    // Iniciar timer de muestreo
+    // Start timer for sampling intervals
     k_timer_start(&sampling_timer, K_MSEC(SAMPLING_INTERVAL_MS), 
                  K_MSEC(SAMPLING_INTERVAL_MS));
 
-    // Comenzar escaneo BLE
+    /* Inicia escaneo */
     err = bt_le_scan_start(&scan_param, scan_cb);
     if (err) {
         LOG_ERR("Falló inicio de escaneo (err %d)", err);
@@ -230,7 +197,6 @@ int main(void)
 
     LOG_INF("Escaneo iniciado exitosamente");
 
-    // Bucle principal
     while (1) {
         k_sleep(K_SECONDS(1));
     }

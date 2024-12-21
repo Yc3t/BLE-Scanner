@@ -4,6 +4,7 @@ import time
 import argparse
 from pymongo import MongoClient
 from uart import UARTReceiver
+from icecream import ic
 
 class UARTMongoReceiver(UARTReceiver):
     def __init__(self, port='COM20', baudrate=115200, 
@@ -14,7 +15,7 @@ class UARTMongoReceiver(UARTReceiver):
         # Conexión a MongoDB
         self.client = MongoClient(mongo_uri)
         self.db = self.client.ble_scanner
-        self.collection = self.db.adv_buffer1
+        self.collection = self.db.PB1_7s
 
     def _store_buffer(self, header, devices):
         """Almacena el buffer completo en MongoDB"""
@@ -40,26 +41,22 @@ class UARTMongoReceiver(UARTReceiver):
                 document['devices'].append(device_doc)
             
             result = self.collection.insert_one(document)
-            print(f"Buffer almacenado en la base de datos (ID: {result.inserted_id})")
+            ic("Buffer almacenado en BD", result.inserted_id)
             return True
         except Exception as e:
-            print(f"Error almacenando en la base de datos: {e}")
+            ic("Error almacenando en BD:", e)
             return False
 
     def receive_messages(self, duration=None):
-        """Recibe y almacena buffers durante un tiempo específico
-        
-        Args:
-            duration (int, optional): Duración en segundos. None para ejecución indefinida.
-        """
-        print("Iniciando recepción de buffers...")
+        """Recibe y almacena buffers durante un tiempo específico"""
+        ic("Iniciando recepción de buffers...")
         start_time = time.time()
         
         while True:
             try:
                 # Verificar tiempo transcurrido
                 if duration and (time.time() - start_time) >= duration:
-                    print(f"\nTiempo de ejecución ({duration}s) completado")
+                    ic(f"Tiempo de ejecución ({duration}s) completado")
                     break
 
                 # Busca la cabecera
@@ -88,29 +85,31 @@ class UARTMongoReceiver(UARTReceiver):
                 if devices:
                     self._store_buffer(header, devices)
                     
-                    print("\n=== Buffer Almacenado ===")
-                    print(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
-                    print(f"Secuencia: {header['sequence']}")
-                    print(f"Dispositivos: {len(devices)}")
-                    print("=====================\n")
+                    ic("=== Estadísticas del Buffer ===")
+                    ic("Marca de tiempo:", datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
+                    ic("Secuencia:", header['sequence'])
+                    ic("Dispositivos:", len(devices))
+                    ic("N_ADV_RAW:", header['n_adv_raw'])
+                    ic("==============================")
 
             except serial.SerialException as e:
-                print(f"Error de comunicación serial: {e}")
+                ic("Error de comunicación serial:", e)
                 break
             except KeyboardInterrupt:
-                print("\nRecepción interrumpida por el usuario")
+                ic("Recepción interrumpida por el usuario")
                 break
             except Exception as e:
-                print(f"Error inesperado: {e}")
+                ic("Error inesperado:", e)
                 continue
 
     def close(self):
         """Cierra las conexiones"""
         super().close()  # Cierra el puerto serial
         self.client.close()  # Cierra la conexión MongoDB
+        ic("Conexiones cerradas")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='BLE Scanner UART MongoDB Receiver')
+    parser = argparse.ArgumentParser(description='Receptor BLE Scanner UART MongoDB')
     parser.add_argument('--port', type=str, default='COM20',
                       help='Puerto serial (default: COM20)')
     parser.add_argument('--duration', type=int,
@@ -126,9 +125,10 @@ if __name__ == "__main__":
             port=args.port,
             mongo_uri=args.mongo_uri
         )
-        print(f"Iniciando captura{'.' if not args.duration else f' por {args.duration} segundos.'}")
+        ic("Iniciando captura", 
+           "indefinidamente" if not args.duration else f"por {args.duration} segundos")
         receiver.receive_messages(duration=args.duration)
     except Exception as e:
-        print(f"Error: {e}")
+        ic("Error:", e)
     finally:
         receiver.close()
