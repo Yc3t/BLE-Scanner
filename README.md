@@ -39,6 +39,7 @@ Script Python que:
 - MongoDB
 - PySerial
 - PyMongo
+- gcc
 
 #### Instalación
 ```bash
