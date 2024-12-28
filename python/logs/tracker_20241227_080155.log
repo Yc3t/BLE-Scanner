@@ -1,2 +1,0 @@
-2024-12-27 08:01:55,136 - INFO - Iniciando rastreador combinado GPS + BLE
-2024-12-27 08:01:55,181 - ERROR - Error conectando GPS: could not open port 'COM27': PermissionError(13, 'Access is denied.', None, 5)
