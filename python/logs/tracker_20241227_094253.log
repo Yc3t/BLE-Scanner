@@ -1,0 +1,8 @@
+2024-12-27 09:42:53,239 - INFO - Iniciando rastreador combinado GPS + BLE
+2024-12-27 09:42:53,251 - INFO - GPS conectado en COM29
+2024-12-27 09:42:53,252 - INFO - Iniciando captura indefinida
+2024-12-27 09:42:53,252 - INFO - Iniciando recepción de buffers combinados...
+2024-12-27 09:44:40,580 - INFO - Recepción interrumpida por el usuario
+2024-12-27 09:44:40,581 - INFO - Total de buffers procesados: 15
+2024-12-27 09:44:40,586 - INFO - Conexión GPS cerrada
+2024-12-27 09:44:40,589 - INFO - Conexión MongoDB cerrada

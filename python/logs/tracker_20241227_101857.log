@@ -1,0 +1,30 @@
+2024-12-27 10:18:57,883 - INFO - Iniciando rastreador combinado GPS + BLE
+2024-12-27 10:18:57,894 - INFO - GPS conectado en COM29
+2024-12-27 10:18:57,895 - INFO - Iniciando captura indefinida
+2024-12-27 10:18:57,895 - INFO - === Iniciando recepción de buffers combinados ===
+2024-12-27 10:18:59,713 - INFO - 
+├─ Secuencia: #133
+├─ Dispositivos: 4 (7A:38:13:6E:2C:DC(RSSI:-68dB), F3:68:13:6E:2C:DC(RSSI:-61dB), 38:68:43:65:DE:28(RSSI:-76dB), ... +1 más)
+├─ Anuncios raw: 63
+└─ GPS: ✗
+2024-12-27 10:19:06,712 - INFO - 
+├─ Secuencia: #134
+├─ Dispositivos: 3 (7A:38:13:6E:2C:DC(RSSI:-53dB), 38:68:43:65:DE:28(RSSI:-80dB), 74:26:68:53:CC:0F(RSSI:-73dB))
+├─ Anuncios raw: 62
+└─ GPS: ✗
+2024-12-27 10:19:13,709 - INFO - 
+├─ Secuencia: #135
+├─ Dispositivos: 3 (38:68:43:65:DE:28(RSSI:-77dB), 74:26:68:53:CC:0F(RSSI:-69dB), 9A:AF:D0:76:DF:2E(RSSI:-73dB))
+├─ Anuncios raw: 55
+└─ GPS: ✗
+2024-12-27 10:19:20,709 - INFO - 
+├─ Secuencia: #136
+├─ Dispositivos: 3 (7A:38:13:6E:2C:DC(RSSI:-55dB), 38:68:43:65:DE:28(RSSI:-79dB), 9A:AF:D0:76:DF:2E(RSSI:-67dB))
+├─ Anuncios raw: 69
+└─ GPS: ✗
+2024-12-27 10:19:27,709 - ERROR - Error inesperado: unsupported format string passed to NoneType.__format__
+2024-12-27 10:19:34,697 - INFO - 
+=== Captura interrumpida por el usuario ===
+2024-12-27 10:19:34,698 - INFO - Total de buffers procesados: 4
+2024-12-27 10:19:34,703 - INFO - Conexión GPS cerrada
+2024-12-27 10:19:34,705 - INFO - Conexión MongoDB cerrada

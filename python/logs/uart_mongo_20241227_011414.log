@@ -1,0 +1,27 @@
+2024-12-27 01:14:14,832 - INFO - Iniciando receptor UART con MongoDB
+2024-12-27 01:14:14,840 - INFO - Conexión a MongoDB establecida
+2024-12-27 01:14:14,841 - INFO - Iniciando captura indefinida
+2024-12-27 01:14:14,841 - INFO - Iniciando recepción de buffers...
+2024-12-27 01:14:19,409 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:14:26,410 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:14:33,410 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:14:40,410 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:14:47,408 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:14:54,410 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:15:01,410 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:15:08,410 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:15:15,410 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:15:22,410 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:15:29,410 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:15:36,410 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:15:43,410 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:15:50,410 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:15:57,410 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:16:04,410 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:16:11,411 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:16:18,410 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:16:25,410 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:16:32,411 - INFO - Recepción interrumpida por el usuario
+2024-12-27 01:16:32,412 - INFO - Total de buffers procesados: 0
+2024-12-27 01:16:32,414 - INFO - Puerto serial cerrado
+2024-12-27 01:16:32,416 - INFO - Conexión MongoDB cerrada

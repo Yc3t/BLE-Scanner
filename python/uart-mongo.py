@@ -5,17 +5,67 @@ import argparse
 from pymongo import MongoClient
 from uart import UARTReceiver
 from icecream import ic
+import logging
+import os
+from enum import Enum
+
+class LogLevel(str, Enum):
+    INFO = "info"
+    DEBUG = "debug"
 
 class UARTMongoReceiver(UARTReceiver):
     def __init__(self, port='COM20', baudrate=115200, 
-                 mongo_uri="mongodb://localhost:27017/"):
+                 mongo_uri="mongodb://localhost:27017/",
+                 log_level="info"):
         """Inicializa el receptor UART con MongoDB"""
+        self.log_level = log_level.lower()
+        # Configurar logging primero
+        self._setup_logging()
+        self.logger.info("Iniciando receptor UART con MongoDB")
+        
         super().__init__(port, baudrate)
         
         # Conexión a MongoDB
-        self.client = MongoClient(mongo_uri)
-        self.db = self.client.ble_scanner
-        self.collection = self.db.PB1_7s
+        try:
+            self.client = MongoClient(mongo_uri)
+            self.db = self.client.ble_scanner
+            self.collection = self.db.test3
+            self.logger.info("Conexión a MongoDB establecida")
+        except Exception as e:
+            self.logger.error(f"Error conectando a MongoDB: {e}")
+            raise
+
+    def _setup_logging(self):
+        """Configura el sistema de logging"""
+        # Crear directorio de logs si no existe
+        log_dir = "logs"
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+            
+        # Nombre del archivo de log con timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        log_file = os.path.join(log_dir, f"uart_mongo_{timestamp}.log")
+        
+        # Configurar logging
+        self.logger = logging.getLogger('UART_Mongo_Receiver')
+        self.logger.setLevel(logging.DEBUG)
+        
+        # Handler para archivo
+        file_handler = logging.FileHandler(log_file, encoding='utf-8')
+        file_handler.setLevel(logging.DEBUG if self.log_level == "debug" else logging.INFO)
+        
+        # Handler para consola
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.DEBUG if self.log_level == "debug" else logging.INFO)
+        
+        # Formato del log
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        file_handler.setFormatter(formatter)
+        console_handler.setFormatter(formatter)
+        
+        # Agregar handlers
+        self.logger.addHandler(file_handler)
+        self.logger.addHandler(console_handler)
 
     def _store_buffer(self, header, devices):
         """Almacena el buffer completo en MongoDB"""
@@ -41,22 +91,25 @@ class UARTMongoReceiver(UARTReceiver):
                 document['devices'].append(device_doc)
             
             result = self.collection.insert_one(document)
-            ic("Buffer almacenado en BD", result.inserted_id)
+            self.logger.debug(f"Buffer almacenado en BD - ID: {result.inserted_id}")
+            self.logger.debug(f"Datos del buffer - Secuencia: {header['sequence']}, MACs: {len(devices)}")
             return True
         except Exception as e:
-            ic("Error almacenando en BD:", e)
+            self.logger.error(f"Error almacenando en BD: {e}")
             return False
 
     def receive_messages(self, duration=None):
         """Recibe y almacena buffers durante un tiempo específico"""
-        ic("Iniciando recepción de buffers...")
+        self.logger.info("Iniciando recepción de buffers...")
         start_time = time.time()
+        buffers_procesados = 0
         
         while True:
             try:
                 # Verificar tiempo transcurrido
                 if duration and (time.time() - start_time) >= duration:
-                    ic(f"Tiempo de ejecución ({duration}s) completado")
+                    self.logger.info(f"Tiempo de ejecución ({duration}s) completado")
+                    self.logger.info(f"Total de buffers procesados: {buffers_procesados}")
                     break
 
                 # Busca la cabecera
@@ -64,6 +117,7 @@ class UARTMongoReceiver(UARTReceiver):
                     if self.serial.read() == b'\x55':
                         potential_header = b'\x55' + self.serial.read(3)
                         if potential_header == self.HEADER_MAGIC:
+                            self.logger.debug("Cabecera UART encontrada")
                             break
 
                 # Lee y parsea la cabecera
@@ -71,42 +125,49 @@ class UARTMongoReceiver(UARTReceiver):
                 header = self._parse_header(header_data)
                 
                 if not header:
+                    self.logger.warning("Error al parsear cabecera")
                     continue
 
                 # Lee todos los dispositivos
                 devices = []
-                for _ in range(header['n_mac']):
+                for i in range(header['n_mac']):
                     device_data = self.serial.read(self.DEVICE_LENGTH)
                     device = self._parse_device(device_data)
                     if device:
                         devices.append(device)
+                        self.logger.debug(f"Dispositivo {i+1} parseado - MAC: {device['mac']}")
 
                 # Almacena el buffer completo
                 if devices:
-                    self._store_buffer(header, devices)
-                    
-                    ic("=== Estadísticas del Buffer ===")
-                    ic("Marca de tiempo:", datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
-                    ic("Secuencia:", header['sequence'])
-                    ic("Dispositivos:", len(devices))
-                    ic("N_ADV_RAW:", header['n_adv_raw'])
-                    ic("==============================")
+                    if self._store_buffer(header, devices):
+                        buffers_procesados += 1
+                        self.logger.debug(
+                            f"Buffer #{buffers_procesados} procesado - "
+                            f"Secuencia: {header['sequence']}, "
+                            f"Dispositivos: {len(devices)}, "
+                            f"N_ADV_RAW: {header['n_adv_raw']}"
+                        )
 
             except serial.SerialException as e:
-                ic("Error de comunicación serial:", e)
+                self.logger.error(f"Error de comunicación serial: {e}")
                 break
             except KeyboardInterrupt:
-                ic("Recepción interrumpida por el usuario")
+                self.logger.info(f"Recepción interrumpida por el usuario")
+                self.logger.info(f"Total de buffers procesados: {buffers_procesados}")
                 break
             except Exception as e:
-                ic("Error inesperado:", e)
+                self.logger.error(f"Error inesperado: {e}")
                 continue
 
     def close(self):
         """Cierra las conexiones"""
-        super().close()  # Cierra el puerto serial
-        self.client.close()  # Cierra la conexión MongoDB
-        ic("Conexiones cerradas")
+        try:
+            super().close()  # Cierra el puerto serial
+            self.logger.info("Puerto serial cerrado")
+            self.client.close()  # Cierra la conexión MongoDB
+            self.logger.info("Conexión MongoDB cerrada")
+        except Exception as e:
+            self.logger.error(f"Error al cerrar conexiones: {e}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Receptor BLE Scanner UART MongoDB')
@@ -117,18 +178,27 @@ if __name__ == "__main__":
     parser.add_argument('--mongo-uri', type=str, 
                       default="mongodb://localhost:27017/",
                       help='URI de MongoDB (default: mongodb://localhost:27017/)')
+    parser.add_argument('--log-level', type=str,
+                      choices=['info', 'debug'],
+                      default='info',
+                      help='Nivel de logging (default: info)')
     
     args = parser.parse_args()
     
     try:
         receiver = UARTMongoReceiver(
             port=args.port,
-            mongo_uri=args.mongo_uri
+            mongo_uri=args.mongo_uri,
+            log_level=args.log_level
         )
-        ic("Iniciando captura", 
-           "indefinidamente" if not args.duration else f"por {args.duration} segundos")
+        receiver.logger.info("Iniciando captura %s", 
+                           "indefinida" if not args.duration else f"por {args.duration} segundos")
         receiver.receive_messages(duration=args.duration)
     except Exception as e:
-        ic("Error:", e)
+        if hasattr(receiver, 'logger'):
+            receiver.logger.error(f"Error: {e}")
+        else:
+            print(f"Error: {e}")
     finally:
-        receiver.close()
+        if hasattr(receiver, 'close'):
+            receiver.close()

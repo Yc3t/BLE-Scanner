@@ -1,0 +1,11 @@
+2024-12-27 02:28:10,386 - INFO - Iniciando rastreador combinado GPS + BLE
+2024-12-27 02:28:10,396 - INFO - GPS conectado en COM27
+2024-12-27 02:28:10,397 - INFO - Iniciando captura indefinida
+2024-12-27 02:28:10,397 - INFO - Iniciando recepción de buffers combinados...
+2024-12-27 02:28:12,559 - DEBUG - Cabecera UART encontrada
+2024-12-27 02:28:12,563 - DEBUG - Dispositivo 1 parseado - MAC: 02:9B:87:E5:E6:60
+2024-12-27 02:28:12,584 - INFO - Buffer #1 procesado - Secuencia: 72, Dispositivos: 1, GPS: No disponible
+2024-12-27 02:28:19,559 - INFO - Recepción interrumpida por el usuario
+2024-12-27 02:28:19,563 - INFO - Total de buffers procesados: 1
+2024-12-27 02:28:19,569 - INFO - Conexión GPS cerrada
+2024-12-27 02:28:19,570 - INFO - Conexión MongoDB cerrada

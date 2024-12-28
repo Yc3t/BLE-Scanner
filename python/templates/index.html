@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>GPS + BLE Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, sans-serif;
+            background-color: #f5f5f5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        /* Ajustes específicos para PC */
+        @media (min-width: 768px) {
+            .dashboard {
+                grid-template-columns: repeat(6, 1fr);
+                gap: 20px;
+            }
+
+            .container {
+                max-width: 1400px;
+            }
+
+            .stat-card {
+                padding: 20px !important;
+            }
+
+            .stat-title {
+                font-size: 0.9em !important;
+            }
+
+            .stat-value {
+                font-size: 1.4em !important;
+            }
+
+            #map {
+                height: 70vh !important;
+            }
+
+            .header h1 {
+                font-size: 1.8em !important;
+            }
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-title {
+            color: #666;
+            font-size: 0.8em;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .stat-value {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #2c3e50;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #map {
+            height: 60vh;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            z-index: 1;
+        }
+
+        .header {
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            margin: 0;
+            font-size: 1.5em;
+            font-weight: 600;
+        }
+
+        .header p {
+            color: #666;
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+
+        .legend {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: inline-block;
+            font-size: 0.9em;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .legend-item {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+
+        /* Optimizaciones para rendimiento */
+        .leaflet-marker-icon {
+            will-change: transform;
+        }
+
+        .leaflet-fade-anim .leaflet-tile {
+            will-change: opacity;
+        }
+
+        .controls {
+            margin: 10px 0;
+        }
+
+        .time-select {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            background: white;
+            font-size: 0.9em;
+            cursor: pointer;
+            margin-right: 8px;
+            transition: all 0.2s ease;
+        }
+
+        #toggleUpdates {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        #toggleUpdates:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        #toggleUpdates:active {
+            transform: translateY(1px);
+        }
+
+        #toggleUpdates.paused {
+            background: #f44336;
+        }
+
+        /* Offline map style */
+        .offline-map {
+            background: #f0f0f0;
+            position: relative;
+        }
+
+        .offline-map::after {
+            content: "Mapa sin conexión";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #666;
+            font-size: 1.2em;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>GPS + BLE Tracker</h1>
+            <div class="controls">
+                <select id="timeRange" class="time-select">
+                    <option value="5m">Últimos 5 minutos</option>
+                    <option value="15m">Últimos 15 minutos</option>
+                    <option value="30m">Últimos 30 minutos</option>
+                    <option value="1h">Última hora</option>
+                    <option value="3h">Últimas 3 horas</option>
+                    <option value="6h">Últimas 6 horas</option>
+                    <option value="12h">Últimas 12 horas</option>
+                    <option value="1d">Último día</option>
+                </select>
+                <button id="toggleUpdates" class="time-select">
+                    Pausar actualizaciones
+                </button>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <div class="stat-card">
+                <div class="stat-title">Total Buffers</div>
+                <div class="stat-value" id="total-buffers">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title" id="recent-buffers-label">Buffers (5M)</div>
+                <div class="stat-value" id="recent-buffers">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Dispositivos</div>
+                <div class="stat-value" id="unique-devices">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Advertisements</div>
+                <div class="stat-value" id="total-advertisements">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Secuencia</div>
+                <div class="stat-value" id="last-sequence">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Actualización</div>
+                <div class="stat-value" id="last-update">-</div>
+            </div>
+        </div>
+
+        <div id="map"></div>
+
+    </div>
+
+    </div>
+
+    <script>
+        // Detectar si es dispositivo móvil
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        let mapTiles;
+
+        // Obtener el tiempo guardado o usar el default
+        let selectedTimeRange = localStorage.getItem('selectedTimeRange') || '5m';
+
+        // Configuración inicial del mapa
+        var map = L.map('map', {
+            zoomControl: !isMobile,
+            attributionControl: !isMobile,
+            tap: isMobile
+        }).setView([37.7122, -0.9892], 13);
+
+        // Crear capas para GPS y BLE como variables globales
+        var gpsLayer = L.layerGroup().addTo(map);
+        var bleLayer = L.layerGroup().addTo(map);
+
+        // Intentar cargar tiles con fallback a fondo plano
+        try {
+            mapTiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                minZoom: 10
+            }).addTo(map);
+        } catch (e) {
+            console.log('Fallback to plain background');
+            document.getElementById('map').classList.add('offline-map');
+        }
+
+        // Actualizar el selector con el valor guardado
+        document.addEventListener('DOMContentLoaded', function () {
+            const timeSelect = document.getElementById('timeRange');
+            timeSelect.value = selectedTimeRange;
+        });
+
+        function updateUI(data) {
+            // Limpiar capas existentes
+            gpsLayer.clearLayers();
+            bleLayer.clearLayers();
+
+            // Actualizar estadísticas
+            if (data.stats) {
+                // Update the label first
+                document.getElementById('recent-buffers-label').textContent = data.stats.recent_buffers_label;
+
+                const stats = {
+                    'total-buffers': data.stats.total_buffers,
+                    'recent-buffers': data.stats.recent_buffers,
+                    'unique-devices': data.stats.unique_devices,
+                    'total-advertisements': data.stats.total_advertisements,
+                    'last-sequence': data.stats.last_sequence,
+                    'last-update': new Date(data.stats.last_timestamp).toLocaleString('es-ES', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    })
+                };
+
+                Object.entries(stats).forEach(([id, value]) => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.textContent = typeof value === 'number' ?
+                            value.toLocaleString() : value;
+                    }
+                });
+            }
+
+            // Actualizar mapa con nuevos datos
+            const bounds = [];
+            if (data.geojson && data.geojson.features) {
+                data.geojson.features.forEach(feature => {
+                    try {
+                        const coords = feature.geometry.coordinates;
+
+                        // Validate coordinates
+                        if (!coords || coords.length !== 2 ||
+                            !isFinite(coords[0]) || !isFinite(coords[1])) {
+                            console.warn('Invalid coordinates:', coords);
+                            return;
+                        }
+
+                        const props = feature.properties;
+                        const latLng = [coords[1], coords[0]];
+
+                        // Validate latLng
+                        if (!isFinite(latLng[0]) || !isFinite(latLng[1])) {
+                            console.warn('Invalid latLng:', latLng);
+                            return;
+                        }
+
+                        bounds.push(latLng);
+
+                        const layer = props.type === 'gps' ? gpsLayer : bleLayer;
+                        const color = props.type === 'gps' ? 'blue' : 'red';
+                        const radius = props.type === 'gps' ? 8 : Math.abs(props.rssi) / 10;
+
+                        L.circleMarker(latLng, {
+                            color,
+                            fillColor: color,
+                            fillOpacity: 0.5,
+                            radius: isFinite(radius) ? radius : 8,
+                            weight: 1
+                        }).addTo(layer);
+                    } catch (error) {
+                        console.error('Error adding marker:', error);
+                    }
+                });
+
+                if (bounds.length > 0) {
+                    try {
+                        map.fitBounds(bounds, { padding: [30, 30] });
+                    } catch (error) {
+                        console.error('Error fitting bounds:', error);
+                    }
+                }
+            }
+        }
+
+        // Time range selector con limpieza de datos
+        document.getElementById('timeRange').addEventListener('change', function (e) {
+            selectedTimeRange = e.target.value;
+            localStorage.setItem('selectedTimeRange', selectedTimeRange);
+
+            // Limpiar datos existentes
+            gpsLayer.clearLayers();
+            bleLayer.clearLayers();
+
+            // Detener y reiniciar actualizaciones
+            clearInterval(updateInterval);
+            updateData();
+            startUpdates();
+        });
+
+        function updateData() {
+            fetch(`/api/data?timeRange=${selectedTimeRange}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Cache-Control': 'no-cache'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    requestAnimationFrame(() => {
+                        updateUI(data);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('map').classList.add('offline-map');
+                });
+        }
+
+        let updateInterval;
+        let isUpdating = true;
+        const toggleButton = document.getElementById('toggleUpdates');
+
+        function startUpdates() {
+            if (!isUpdating) return; // Don't start if manually paused
+            updateData();
+            updateInterval = setInterval(updateData, 10000);
+        }
+
+        function stopUpdates() {
+            clearInterval(updateInterval);
+        }
+
+        toggleButton.addEventListener('click', function () {
+            isUpdating = !isUpdating;
+            if (isUpdating) {
+                startUpdates();
+                toggleButton.textContent = 'Pausar actualizaciones';
+                toggleButton.classList.remove('paused');
+            } else {
+                stopUpdates();
+                toggleButton.textContent = 'Reanudar actualizaciones';
+                toggleButton.classList.add('paused');
+            }
+        });
+
+        // Gestión de visibilidad de la página
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopUpdates();
+            } else if (isUpdating) { // Only restart if not manually paused
+                startUpdates();
+            }
+        });
+
+        // Iniciar actualizaciones
+        startUpdates();
+    </script>
+</body>
+
+</html>

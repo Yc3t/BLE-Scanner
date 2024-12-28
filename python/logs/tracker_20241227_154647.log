@@ -1,0 +1,26 @@
+2024-12-27 15:46:47,461 - INFO - Iniciando rastreador combinado GPS + BLE
+2024-12-27 15:46:47,472 - INFO - GPS conectado en COM29
+2024-12-27 15:46:47,473 - INFO - Iniciando captura por 10 segundos
+2024-12-27 15:46:47,473 - INFO - === Iniciando recepción de buffers combinados ===
+2024-12-27 15:46:49,914 - INFO - 
+├─ Secuencia: #108
+├─ Dispositivos: 10 (C5:BB:10:3B:FA:E3(RSSI:-52dB), 9E:71:8C:FC:E6:CC(RSSI:-75dB), 9C:BB:E4:B6:6F:4D(RSSI:-62dB), ... +7 más)
+├─ Anuncios raw: 114
+└─ GPS: ✓
+   └─ Pos: 37.684016, -0.950192 (41.40 knots)
+2024-12-27 15:46:56,923 - INFO - 
+├─ Secuencia: #109
+├─ Dispositivos: 13 (2A:86:60:DA:FC:DA(RSSI:-86dB), 73:DB:08:8B:45:60(RSSI:-93dB), C5:BB:10:3B:FA:E3(RSSI:-48dB), ... +10 más)
+├─ Anuncios raw: 142
+└─ GPS: ✓
+   └─ Pos: 37.684016, -0.950192 (41.40 knots)
+2024-12-27 15:47:03,927 - INFO - 
+├─ Secuencia: #110
+├─ Dispositivos: 14 (73:DB:08:8B:45:60(RSSI:-93dB), 00:B5:27:24:D0:16(RSSI:-89dB), C5:BB:10:3B:FA:E3(RSSI:-49dB), ... +11 más)
+├─ Anuncios raw: 156
+└─ GPS: ✓
+   └─ Pos: 37.684016, -0.950192 (41.40 knots)
+2024-12-27 15:47:03,935 - INFO - Tiempo de ejecución (10s) completado
+2024-12-27 15:47:03,935 - INFO - Total de buffers procesados: 3
+2024-12-27 15:47:03,943 - INFO - Conexión GPS cerrada
+2024-12-27 15:47:03,945 - INFO - Conexión MongoDB cerrada

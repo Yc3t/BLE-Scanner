@@ -1,0 +1,50 @@
+2024-12-27 01:26:35,632 - INFO - Iniciando rastreador combinado GPS + BLE
+2024-12-27 01:26:35,642 - INFO - GPS conectado en COM27
+2024-12-27 01:26:35,642 - INFO - Iniciando captura indefinida
+2024-12-27 01:26:35,642 - INFO - Iniciando recepción de buffers combinados...
+2024-12-27 01:26:41,417 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:26:41,420 - DEBUG - Dispositivo 1 parseado - MAC: 02:9B:87:E5:E6:60
+2024-12-27 01:26:41,425 - INFO - Buffer #1 procesado - Secuencia: 218, Dispositivos: 1, GPS: Válido
+2024-12-27 01:26:48,418 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:26:48,447 - DEBUG - Dispositivo 1 parseado - MAC: 02:9B:87:E5:E6:60
+2024-12-27 01:26:48,452 - INFO - Buffer #2 procesado - Secuencia: 219, Dispositivos: 1, GPS: Válido
+2024-12-27 01:26:55,418 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:26:55,420 - DEBUG - Dispositivo 1 parseado - MAC: 02:9B:87:E5:E6:60
+2024-12-27 01:26:55,424 - INFO - Buffer #3 procesado - Secuencia: 220, Dispositivos: 1, GPS: Válido
+2024-12-27 01:27:02,418 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:27:02,421 - DEBUG - Dispositivo 1 parseado - MAC: 02:9B:87:E5:E6:60
+2024-12-27 01:27:02,423 - INFO - Buffer #4 procesado - Secuencia: 221, Dispositivos: 1, GPS: Válido
+2024-12-27 01:27:09,417 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:27:09,421 - DEBUG - Dispositivo 1 parseado - MAC: 02:9B:87:E5:E6:60
+2024-12-27 01:27:09,423 - INFO - Buffer #5 procesado - Secuencia: 222, Dispositivos: 1, GPS: Válido
+2024-12-27 01:27:16,418 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:27:16,420 - DEBUG - Dispositivo 1 parseado - MAC: 02:9B:87:E5:E6:60
+2024-12-27 01:27:16,423 - INFO - Buffer #6 procesado - Secuencia: 223, Dispositivos: 1, GPS: Válido
+2024-12-27 01:27:23,418 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:27:23,420 - DEBUG - Dispositivo 1 parseado - MAC: 02:9B:87:E5:E6:60
+2024-12-27 01:27:23,423 - INFO - Buffer #7 procesado - Secuencia: 224, Dispositivos: 1, GPS: Válido
+2024-12-27 01:27:30,418 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:27:30,420 - DEBUG - Dispositivo 1 parseado - MAC: 02:9B:87:E5:E6:60
+2024-12-27 01:27:30,422 - INFO - Buffer #8 procesado - Secuencia: 225, Dispositivos: 1, GPS: Válido
+2024-12-27 01:27:37,418 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:27:37,420 - DEBUG - Dispositivo 1 parseado - MAC: 02:9B:87:E5:E6:60
+2024-12-27 01:27:37,423 - INFO - Buffer #9 procesado - Secuencia: 226, Dispositivos: 1, GPS: Válido
+2024-12-27 01:27:44,418 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:27:44,421 - DEBUG - Dispositivo 1 parseado - MAC: 02:9B:87:E5:E6:60
+2024-12-27 01:27:44,423 - INFO - Buffer #10 procesado - Secuencia: 227, Dispositivos: 1, GPS: Válido
+2024-12-27 01:27:51,418 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:27:51,421 - DEBUG - Dispositivo 1 parseado - MAC: 02:9B:87:E5:E6:60
+2024-12-27 01:27:51,423 - INFO - Buffer #11 procesado - Secuencia: 228, Dispositivos: 1, GPS: Válido
+2024-12-27 01:27:58,418 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:27:58,421 - DEBUG - Dispositivo 1 parseado - MAC: 02:9B:87:E5:E6:60
+2024-12-27 01:27:58,424 - INFO - Buffer #12 procesado - Secuencia: 229, Dispositivos: 1, GPS: Válido
+2024-12-27 01:28:05,419 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:28:05,422 - DEBUG - Dispositivo 1 parseado - MAC: 02:9B:87:E5:E6:60
+2024-12-27 01:28:05,423 - INFO - Buffer #13 procesado - Secuencia: 230, Dispositivos: 1, GPS: Válido
+2024-12-27 01:28:12,418 - DEBUG - Cabecera UART encontrada
+2024-12-27 01:28:12,421 - DEBUG - Dispositivo 1 parseado - MAC: 02:9B:87:E5:E6:60
+2024-12-27 01:28:12,423 - INFO - Buffer #14 procesado - Secuencia: 231, Dispositivos: 1, GPS: Válido
+2024-12-27 01:28:19,419 - INFO - Recepción interrumpida por el usuario
+2024-12-27 01:28:19,419 - INFO - Total de buffers procesados: 14
+2024-12-27 01:28:19,422 - INFO - Conexión GPS cerrada
+2024-12-27 01:28:19,423 - INFO - Conexión MongoDB cerrada

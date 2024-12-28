@@ -1,0 +1,49 @@
+2024-12-27 10:12:07,033 - INFO - Iniciando rastreador combinado GPS + BLE
+2024-12-27 10:12:07,045 - INFO - GPS conectado en COM29
+2024-12-27 10:12:07,046 - INFO - Iniciando captura indefinida
+2024-12-27 10:12:07,046 - INFO - === Iniciando recepción de buffers combinados ===
+2024-12-27 10:12:13,705 - INFO - 
+├─ Secuencia: #75
+├─ Dispositivos: 3 (73:5C:C7:80:26:05(RSSI:-70dB), F3:68:13:6E:2C:DC(RSSI:-66dB), 38:68:43:65:DE:28(RSSI:-76dB))
+├─ Anuncios raw: 66
+└─ GPS: ✗
+2024-12-27 10:12:20,710 - INFO - 
+├─ Secuencia: #76
+├─ Dispositivos: 4 (73:5C:C7:80:26:05(RSSI:-68dB), 7A:38:13:6E:2C:DC(RSSI:-55dB), F3:68:13:6E:2C:DC(RSSI:-66dB), ... +1 más)
+├─ Anuncios raw: 62
+└─ GPS: ✗
+2024-12-27 10:12:27,703 - INFO - 
+├─ Secuencia: #77
+├─ Dispositivos: 3 (73:5C:C7:80:26:05(RSSI:-65dB), 7A:38:13:6E:2C:DC(RSSI:-54dB), 38:68:43:65:DE:28(RSSI:-77dB))
+├─ Anuncios raw: 62
+└─ GPS: ✗
+2024-12-27 10:12:34,704 - INFO - 
+├─ Secuencia: #78
+├─ Dispositivos: 3 (73:5C:C7:80:26:05(RSSI:-80dB), F3:68:13:6E:2C:DC(RSSI:-58dB), 38:68:43:65:DE:28(RSSI:-79dB))
+├─ Anuncios raw: 60
+└─ GPS: ✗
+2024-12-27 10:12:41,707 - INFO - 
+├─ Secuencia: #79
+├─ Dispositivos: 4 (73:5C:C7:80:26:05(RSSI:-67dB), 7A:38:13:6E:2C:DC(RSSI:-52dB), F3:68:13:6E:2C:DC(RSSI:-68dB), ... +1 más)
+├─ Anuncios raw: 59
+└─ GPS: ✗
+2024-12-27 10:12:48,705 - INFO - 
+├─ Secuencia: #80
+├─ Dispositivos: 3 (73:5C:C7:80:26:05(RSSI:-63dB), 7A:38:13:6E:2C:DC(RSSI:-68dB), 38:68:43:65:DE:28(RSSI:-79dB))
+├─ Anuncios raw: 62
+└─ GPS: ✗
+2024-12-27 10:12:55,708 - INFO - 
+├─ Secuencia: #81
+├─ Dispositivos: 4 (73:5C:C7:80:26:05(RSSI:-78dB), 7A:38:13:6E:2C:DC(RSSI:-54dB), F3:68:13:6E:2C:DC(RSSI:-81dB), ... +1 más)
+├─ Anuncios raw: 56
+└─ GPS: ✗
+2024-12-27 10:13:02,703 - INFO - 
+├─ Secuencia: #82
+├─ Dispositivos: 3 (73:5C:C7:80:26:05(RSSI:-65dB), F3:68:13:6E:2C:DC(RSSI:-62dB), 38:68:43:65:DE:28(RSSI:-77dB))
+├─ Anuncios raw: 63
+└─ GPS: ✗
+2024-12-27 10:13:09,693 - INFO - 
+=== Captura interrumpida por el usuario ===
+2024-12-27 10:13:09,693 - INFO - Total de buffers procesados: 8
+2024-12-27 10:13:09,699 - INFO - Conexión GPS cerrada
+2024-12-27 10:13:09,700 - INFO - Conexión MongoDB cerrada

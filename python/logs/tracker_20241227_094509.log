@@ -1,0 +1,61 @@
+2024-12-27 09:45:09,083 - INFO - Iniciando rastreador combinado GPS + BLE
+2024-12-27 09:45:09,096 - INFO - GPS conectado en COM29
+2024-12-27 09:45:09,096 - INFO - Iniciando captura indefinida
+2024-12-27 09:45:09,097 - INFO - Iniciando recepción de buffers combinados...
+2024-12-27 09:45:15,580 - DEBUG - Cabecera UART encontrada
+2024-12-27 09:45:15,583 - DEBUG - Dispositivo 1 parseado - MAC: 7A:38:13:6E:2C:DC
+2024-12-27 09:45:15,586 - DEBUG - Dispositivo 2 parseado - MAC: F3:68:13:6E:2C:DC
+2024-12-27 09:45:15,590 - DEBUG - Dispositivo 3 parseado - MAC: 38:68:43:65:DE:28
+2024-12-27 09:45:15,646 - DEBUG - Buffer #1 procesado - Secuencia: 28, Dispositivos: 3, GPS: No disponible
+2024-12-27 09:45:22,580 - DEBUG - Cabecera UART encontrada
+2024-12-27 09:45:22,583 - DEBUG - Dispositivo 1 parseado - MAC: F3:68:13:6E:2C:DC
+2024-12-27 09:45:22,587 - DEBUG - Dispositivo 2 parseado - MAC: 38:68:43:65:DE:28
+2024-12-27 09:45:22,588 - DEBUG - Buffer #2 procesado - Secuencia: 29, Dispositivos: 2, GPS: No disponible
+2024-12-27 09:45:29,580 - DEBUG - Cabecera UART encontrada
+2024-12-27 09:45:29,583 - DEBUG - Dispositivo 1 parseado - MAC: 7A:38:13:6E:2C:DC
+2024-12-27 09:45:29,586 - DEBUG - Dispositivo 2 parseado - MAC: F3:68:13:6E:2C:DC
+2024-12-27 09:45:29,591 - DEBUG - Dispositivo 3 parseado - MAC: 38:68:43:65:DE:28
+2024-12-27 09:45:29,595 - DEBUG - Buffer #3 procesado - Secuencia: 30, Dispositivos: 3, GPS: No disponible
+2024-12-27 09:45:36,580 - DEBUG - Cabecera UART encontrada
+2024-12-27 09:45:36,583 - DEBUG - Dispositivo 1 parseado - MAC: 7A:38:13:6E:2C:DC
+2024-12-27 09:45:36,586 - DEBUG - Buffer #4 procesado - Secuencia: 31, Dispositivos: 1, GPS: No disponible
+2024-12-27 09:45:43,580 - DEBUG - Cabecera UART encontrada
+2024-12-27 09:45:43,583 - DEBUG - Dispositivo 1 parseado - MAC: F3:68:13:6E:2C:DC
+2024-12-27 09:45:43,587 - DEBUG - Dispositivo 2 parseado - MAC: 38:68:43:65:DE:28
+2024-12-27 09:45:43,588 - DEBUG - Buffer #5 procesado - Secuencia: 32, Dispositivos: 2, GPS: No disponible
+2024-12-27 09:45:50,581 - DEBUG - Cabecera UART encontrada
+2024-12-27 09:45:50,584 - DEBUG - Dispositivo 1 parseado - MAC: 7A:38:13:6E:2C:DC
+2024-12-27 09:45:50,586 - DEBUG - Dispositivo 2 parseado - MAC: F3:68:13:6E:2C:DC
+2024-12-27 09:45:50,591 - DEBUG - Dispositivo 3 parseado - MAC: 38:68:43:65:DE:28
+2024-12-27 09:45:50,595 - DEBUG - Buffer #6 procesado - Secuencia: 33, Dispositivos: 3, GPS: No disponible
+2024-12-27 09:45:57,581 - DEBUG - Cabecera UART encontrada
+2024-12-27 09:45:57,583 - DEBUG - Dispositivo 1 parseado - MAC: 7A:38:13:6E:2C:DC
+2024-12-27 09:45:57,587 - DEBUG - Dispositivo 2 parseado - MAC: 38:68:43:65:DE:28
+2024-12-27 09:45:57,592 - DEBUG - Buffer #7 procesado - Secuencia: 34, Dispositivos: 2, GPS: No disponible
+2024-12-27 09:46:04,581 - DEBUG - Cabecera UART encontrada
+2024-12-27 09:46:04,584 - DEBUG - Dispositivo 1 parseado - MAC: F3:68:13:6E:2C:DC
+2024-12-27 09:46:04,587 - DEBUG - Dispositivo 2 parseado - MAC: 38:68:43:65:DE:28
+2024-12-27 09:46:04,593 - DEBUG - Buffer #8 procesado - Secuencia: 35, Dispositivos: 2, GPS: No disponible
+2024-12-27 09:46:11,581 - DEBUG - Cabecera UART encontrada
+2024-12-27 09:46:11,584 - DEBUG - Dispositivo 1 parseado - MAC: 7A:38:13:6E:2C:DC
+2024-12-27 09:46:11,587 - DEBUG - Dispositivo 2 parseado - MAC: F3:68:13:6E:2C:DC
+2024-12-27 09:46:11,591 - DEBUG - Dispositivo 3 parseado - MAC: 38:68:43:65:DE:28
+2024-12-27 09:46:11,597 - DEBUG - Buffer #9 procesado - Secuencia: 36, Dispositivos: 3, GPS: No disponible
+2024-12-27 09:46:18,581 - DEBUG - Cabecera UART encontrada
+2024-12-27 09:46:18,584 - DEBUG - Dispositivo 1 parseado - MAC: 7A:38:13:6E:2C:DC
+2024-12-27 09:46:18,588 - DEBUG - Dispositivo 2 parseado - MAC: 38:68:43:65:DE:28
+2024-12-27 09:46:18,592 - DEBUG - Buffer #10 procesado - Secuencia: 37, Dispositivos: 2, GPS: No disponible
+2024-12-27 09:46:25,581 - DEBUG - Cabecera UART encontrada
+2024-12-27 09:46:25,584 - DEBUG - Dispositivo 1 parseado - MAC: 7A:38:13:6E:2C:DC
+2024-12-27 09:46:25,586 - DEBUG - Dispositivo 2 parseado - MAC: F3:68:13:6E:2C:DC
+2024-12-27 09:46:25,591 - DEBUG - Dispositivo 3 parseado - MAC: 38:68:43:65:DE:28
+2024-12-27 09:46:25,596 - DEBUG - Buffer #11 procesado - Secuencia: 38, Dispositivos: 3, GPS: No disponible
+2024-12-27 09:46:32,581 - DEBUG - Cabecera UART encontrada
+2024-12-27 09:46:32,584 - DEBUG - Dispositivo 1 parseado - MAC: F3:68:13:6E:2C:DC
+2024-12-27 09:46:32,588 - DEBUG - Dispositivo 2 parseado - MAC: 38:68:43:65:DE:28
+2024-12-27 09:46:32,589 - DEBUG - Buffer #12 procesado - Secuencia: 39, Dispositivos: 2, GPS: No disponible
+2024-12-27 09:46:39,582 - DEBUG - Cabecera UART encontrada
+2024-12-27 09:46:39,584 - DEBUG - Dispositivo 1 parseado - MAC: 7A:38:13:6E:2C:DC
+2024-12-27 09:46:39,587 - DEBUG - Dispositivo 2 parseado - MAC: F3:68:13:6E:2C:DC
+2024-12-27 09:46:39,591 - DEBUG - Dispositivo 3 parseado - MAC: 38:68:43:65:DE:28
+2024-12-27 09:46:39,595 - DEBUG - Buffer #13 procesado - Secuencia: 40, Dispositivos: 3, GPS: No disponible

@@ -177,3 +177,47 @@ def export_analysis(df, filename="ble_analysis.html"):
     
     # Save to HTML
     temporal_fig.write_html(filename) 
+
+def analyze_buffer_stats(data, df):
+    """
+    Analyze buffer statistics and create visualization
+    
+    Args:
+        data (list): Raw buffer data from MongoDB
+        df (DataFrame): Processed DataFrame with buffer data
+    
+    Returns:
+        tuple: (stats_dict, figure)
+    """
+    # Calculate basic statistics
+    stats = {
+        'total_buffers': len(data),
+        'total_devices': df['mac'].nunique(),
+        'total_advertisements': df['n_adv_raw'].sum(),
+        'avg_devices_per_buffer': df.groupby('sequence')['mac'].nunique().mean(),
+        'avg_rssi': df['rssi'].mean(),
+        'time_span_hours': (df['timestamp'].max() - df['timestamp'].min()).total_seconds() / 3600
+    }
+    
+    # Create single plot for devices per buffer
+    fig, ax = plt.subplots(figsize=(12, 6))
+    
+    # Calculate devices per buffer
+    devices_per_buffer = df.groupby('sequence')['mac'].nunique()
+    
+    # Create line plot
+    ax.plot(devices_per_buffer.index, devices_per_buffer.values, 
+           marker='o', linestyle='-', color='blue')
+    
+    # Customize plot
+    ax.set_title('Dispositivos por buffer')
+    ax.set_xlabel('Secuencia Buffer')
+    ax.set_ylabel('Número de dispositivos')
+    ax.grid(True)
+    
+    # Set integer ticks for x-axis
+    ax.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
+    
+    plt.tight_layout()
+    
+    return stats, fig 

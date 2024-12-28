@@ -1,0 +1,16 @@
+2024-12-27 10:34:02,342 - INFO - Iniciando rastreador combinado GPS + BLE
+2024-12-27 10:34:02,354 - INFO - GPS conectado en COM27
+2024-12-27 10:34:02,355 - INFO - Iniciando captura indefinida
+2024-12-27 10:34:02,356 - INFO - === Iniciando recepción de buffers combinados ===
+2024-12-27 10:34:05,298 - ERROR - Error inesperado: unsupported format string passed to NoneType.__format__
+2024-12-27 10:34:12,293 - ERROR - Error inesperado: unsupported format string passed to NoneType.__format__
+2024-12-27 10:34:19,298 - ERROR - Error inesperado: unsupported format string passed to NoneType.__format__
+2024-12-27 10:34:26,295 - ERROR - Error inesperado: unsupported format string passed to NoneType.__format__
+2024-12-27 10:34:33,294 - ERROR - Error inesperado: unsupported format string passed to NoneType.__format__
+2024-12-27 10:34:40,292 - ERROR - Error inesperado: unsupported format string passed to NoneType.__format__
+2024-12-27 10:34:47,295 - ERROR - Error inesperado: unsupported format string passed to NoneType.__format__
+2024-12-27 10:34:54,282 - INFO - 
+=== Captura interrumpida por el usuario ===
+2024-12-27 10:34:54,283 - INFO - Total de buffers procesados: 0
+2024-12-27 10:34:54,290 - INFO - Conexión GPS cerrada
+2024-12-27 10:34:54,292 - INFO - Conexión MongoDB cerrada

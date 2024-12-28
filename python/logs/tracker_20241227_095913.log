@@ -1,0 +1,4 @@
+2024-12-27 09:59:13,573 - INFO - Iniciando rastreador combinado GPS + BLE
+2024-12-27 09:59:13,584 - INFO - GPS conectado en COM29
+2024-12-27 09:59:13,584 - INFO - Iniciando captura indefinida
+2024-12-27 09:59:13,585 - INFO - Iniciando recepción de buffers combinados...

@@ -1,0 +1,5 @@
+2024-12-27 01:17:58,613 - INFO - Iniciando rastreador combinado GPS + BLE
+2024-12-27 01:17:58,623 - INFO - GPS conectado en COM27
+2024-12-27 01:17:58,623 - ERROR - Error: 'CombinedTracker' object has no attribute 'connect'
+2024-12-27 01:17:58,629 - INFO - Conexión GPS cerrada
+2024-12-27 01:17:58,629 - INFO - Conexión MongoDB cerrada
