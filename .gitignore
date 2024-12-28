@@ -15,6 +15,7 @@ ENV/
 dist/
 build/
 *.egg-info/
+python/logs/*
 
 
 ble_data*.csv
