@@ -37,9 +37,8 @@ class CombinedTracker(UARTReceiver):
 
         # Configuración MongoDB
         self.client = MongoClient(mongo_uri)
-        self.db = self.client.gps_ble_tracker
-        self.gps_collection = self.db.gps_data
-        self.ble_collection = self.db.ble_data
+        self.db = self.client.tracking_data
+        self.collection = self.db.pz1
 
         # Configuración GPS
         self.gps_port = gps_port
@@ -117,7 +116,7 @@ class CombinedTracker(UARTReceiver):
     def _parse_gps(self):
         """Parsea datos GPS"""
         try:
-            if self.gps_ser.in_waiting:
+            while self.gps_ser.in_waiting:  # Read all available GPS data
                 line = self.gps_ser.readline().decode('ascii', errors='replace')
                 
                 if line.startswith("$GPRMC"):
@@ -131,11 +130,11 @@ class CombinedTracker(UARTReceiver):
                             "speed": msg.spd_over_grnd if msg.spd_over_grnd else 0,
                             "track_valid": True
                         }
-                        return self.last_gps_data
+                        return self.last_gps_data  # Return the most recent GPS data
                     
         except Exception as e:
             self.logger.error(f"Error parseando GPS: {e}")
-        return None
+        return self.last_gps_data  # Return last known position if no new data
 
     def _store_buffer(self, header, devices):
         """Almacena el buffer BLE y datos GPS en MongoDB"""
@@ -184,6 +183,9 @@ class CombinedTracker(UARTReceiver):
                     self.logger.info(f"Tiempo de ejecución ({duration}s) completado")
                     self.logger.info(f"Total de buffers procesados: {buffers_procesados}")
                     break
+
+                # Update GPS data regularly
+                self._parse_gps()
 
                 # Busca la cabecera BLE
                 while True:

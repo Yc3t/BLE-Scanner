@@ -14,7 +14,7 @@ CORS(app)
 # MongoDB setup
 client = MongoClient('mongodb://localhost:27017/')
 db = client.tracking_data
-collection = db.port2
+collection = db.combined_data3
 
 def calculate_devices_per_buffer(data, max_points=13):
     """Calculate devices per buffer for the chart"""
@@ -164,28 +164,29 @@ def get_data():
                                 
                                 # Add buffer point with BLE data
                                 devices = d.get('devices', [])
-                                buffer_points.append({
-                                    "type": "Feature",
-                                    "geometry": {
-                                        "type": "Point",
-                                        "coordinates": [longitude, latitude]
-                                    },
-                                    "properties": {
-                                        "type": "buffer",
-                                        "timestamp": d['timestamp'].isoformat(),
-                                        "sequence": d.get('sequence', 0),
-                                        "n_devices": len(devices),
-                                        "n_adv_raw": d.get('n_adv_raw', 0),
-                                        "devices": [
-                                            {
-                                                "mac": dev.get('mac', 'unknown'),
-                                                "rssi": dev.get('rssi', 0),
-                                                "n_adv": dev.get('n_adv', 0)
-                                            }
-                                            for dev in devices
-                                        ]
-                                    }
-                                })
+                                if d.get('sequence') is not None:  # Only add if it's a buffer entry
+                                    buffer_points.append({
+                                        "type": "Feature",
+                                        "geometry": {
+                                            "type": "Point",
+                                            "coordinates": [longitude, latitude]
+                                        },
+                                        "properties": {
+                                            "type": "buffer",
+                                            "timestamp": d['timestamp'].isoformat(),
+                                            "sequence": d.get('sequence', 0),
+                                            "n_devices": len(devices),
+                                            "n_adv_raw": d.get('n_adv_raw', 0),
+                                            "devices": [
+                                                {
+                                                    "mac": dev.get('mac', 'unknown'),
+                                                    "rssi": dev.get('rssi', 0),
+                                                    "n_adv": dev.get('n_adv', 0)
+                                                }
+                                                for dev in devices
+                                            ]
+                                        }
+                                    })
                         except (ValueError, TypeError):
                             continue
 
@@ -195,7 +196,8 @@ def get_data():
         # Calculate BLE stats
         unique_macs = set()
         total_advertisements = 0
-        last_sequence = 0
+        # Get total count of documents in collection
+        total_buffers = collection.count_documents({})
 
         for d in data:
             if 'devices' in d and isinstance(d['devices'], list):
@@ -205,11 +207,16 @@ def get_data():
                             unique_macs.add(device['mac'])
                         if 'n_adv' in device:
                             total_advertisements += device['n_adv']
-            if 'sequence' in d:
-                last_sequence = max(last_sequence, d['sequence'])
 
         last_timestamp = max([d["timestamp"] for d in data]) if data else datetime.utcnow()
         
+        # Get the latest sequence number correctly
+        latest_doc = collection.find_one(
+            {"sequence": {"$exists": True}},
+            sort=[("timestamp", -1)]
+        )
+        last_sequence = latest_doc.get('sequence', 0) if latest_doc else 0
+
         # Calculate chart data
         chart_data = calculate_devices_per_buffer(data)
         
@@ -220,19 +227,23 @@ def get_data():
         response = {
             "geojson": {
                 "type": "FeatureCollection",
-                "features": gps_points + buffer_points  # Combine both types of points
+                "features": gps_points + buffer_points
             },
             "stats": {
-                "total_buffers": len(data),
+                "total_buffers": total_buffers,
                 "recent_buffers": len(buffer_points),
                 "recent_buffers_label": f"Buffers ({time_range})",
                 "unique_devices": len(unique_macs),
                 "total_advertisements": total_advertisements,
                 "last_sequence": last_sequence,
-                "last_timestamp": last_timestamp.isoformat()
+                "last_timestamp": last_timestamp.isoformat(),
+                "last_speed": float(data[-1].get('gps_data', {}).get('speed', 0) or 0),
+                "last_latitude": float(data[-1].get('gps_data', {}).get('coordinates', {}).get('latitude') or 0),
+                "last_longitude": float(data[-1].get('gps_data', {}).get('coordinates', {}).get('longitude') or 0),
+                "last_n_mac": int(data[-1].get('n_mac', 0))
             },
             "chartData": chart_data,
-            "systemInfo": system_info  # Add system info to response
+            "systemInfo": system_info
         }
         
         print("Response prepared successfully")

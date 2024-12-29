@@ -9,7 +9,7 @@ Compress(app)  # Habilitar compresión
 # Configuración MongoDB con índices
 client = MongoClient('mongodb://localhost:27017/')
 db = client.tracking_data
-collection = db.port2
+collection = db.combined_data3
 
 # Crear índices para mejorar el rendimiento
 collection.create_index([("timestamp", -1)])

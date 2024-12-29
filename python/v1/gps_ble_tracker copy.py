@@ -17,7 +17,7 @@ class CombinedTracker(UARTReceiver):
         gps_port="COM26",
         ble_port="COM20",
         ble_baudrate=115200,
-        gps_baudrate=9600,
+        gps_baudrate=115200,
         mongo_uri="mongodb://localhost:27017/",
     ):
         """Inicializa el rastreador combinado GPS + BLE"""
@@ -31,7 +31,7 @@ class CombinedTracker(UARTReceiver):
         # Configuración MongoDB
         self.client = MongoClient(mongo_uri)
         self.db = self.client.tracking_data
-        self.collection = self.db.combined_data3
+        self.collection = self.db.pz1
 
         # Configuración GPS
         self.gps_port = gps_port

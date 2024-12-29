@@ -38,15 +38,16 @@ export function MapSection({ gpsData, zoom, onZoomIn, onZoomOut, features, mapSt
     if (!mapRef.current) {
       mapRef.current = L.map('map', {
         zoomControl: false,
-        attributionControl: true,
+        attributionControl: false,
         minZoom: 3,
-        maxZoom: 18
+        maxZoom: 22
       }).setView([37.7122, -0.9892], zoom)
 
       // Add initial tile layer
       tileLayerRef.current = L.tileLayer(MAP_STYLE_URLS[mapStyle], {
         minZoom: 3,
-        maxZoom: 18
+        maxZoom: 22,
+        attribution: ''
       }).addTo(mapRef.current)
 
       // Create separate layers for GPS, BLE, and trail
@@ -80,7 +81,7 @@ export function MapSection({ gpsData, zoom, onZoomIn, onZoomOut, features, mapSt
       L.polyline(trailPoints, {
         color: 'red',
         weight: 5,
-        opacity: 1,
+        opacity: 0.7,
         smoothFactor: 1
       }).addTo(trailLayerRef.current)
     }
@@ -99,8 +100,8 @@ export function MapSection({ gpsData, zoom, onZoomIn, onZoomOut, features, mapSt
 
         if (gpsLayerRef.current) {
           L.circleMarker(latLng, {
-            color: '#4169E1',
-            fillColor: '#4169E1',
+            color: '#22c55e',
+            fillColor: '#22c55e',
             fillOpacity: 0.5,
             radius: 6,
             weight: 1
@@ -131,9 +132,9 @@ export function MapSection({ gpsData, zoom, onZoomIn, onZoomOut, features, mapSt
           // Create custom divIcon for buffer points
           const bufferIcon = L.divIcon({
             className: 'buffer-icon',
-            html: `<div class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
+            html: `<div class="w-5 h-5 rounded-full bg-black/80 border border-green-500/50 flex items-center justify-center">
               ${ReactDOMServer.renderToString(
-                <Bluetooth size={12} color="white" strokeWidth={1.5} />
+                <Bluetooth size={12} color="#22c55e" strokeWidth={1.5} />
               )}
             </div>`,
             iconSize: [20, 20],

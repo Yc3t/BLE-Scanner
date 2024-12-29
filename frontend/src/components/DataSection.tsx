@@ -46,11 +46,13 @@ export function DataSection({
         title="LAST UPDATE" 
         icon={<Satellite className="w-4 h-4" />}
       >
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div>Sequence: #{stats.last_sequence}</div>
-            <div>Time: {new Date(stats.last_timestamp).toLocaleTimeString()}</div>
-          </div>
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div>Seq: #{stats.last_sequence}</div>
+          <div>Time: {new Date(stats.last_timestamp).toLocaleTimeString()}</div>
+          <div>Devices: {stats.last_n_mac}</div>
+          <div>Speed: {(stats.last_speed * 1.852).toFixed(1)} km/h</div>
+          <div>Lat: {stats.last_latitude.toFixed(6)}°</div>
+          <div>Lon: {stats.last_longitude.toFixed(6)}°</div>
         </div>
       </GPSDataCard>
 

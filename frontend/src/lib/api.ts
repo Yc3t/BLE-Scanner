@@ -41,6 +41,10 @@ export interface TrackerData {
     total_advertisements: number
     last_sequence: number
     last_timestamp: string
+    last_speed: number
+    last_latitude: number
+    last_longitude: number
+    last_n_mac: number
   }
   chartData: Array<{
     buffer: number
