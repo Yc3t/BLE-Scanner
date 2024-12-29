@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 150 43% 5%;
+    --foreground: 150 10% 97%;
+
+    --card: 150 43% 5%;
+    --card-foreground: 150 10% 97%;
+
+    --popover: 150 43% 5%;
+    --popover-foreground: 150 10% 97%;
+
+    --primary: 142 71% 45%;
+    --primary-foreground: 150 10% 97%;
+
+    --secondary: 150 43% 10%;
+    --secondary-foreground: 150 10% 97%;
+
+    --muted: 150 43% 10%;
+    --muted-foreground: 150 10% 60%;
+
+    --accent: 150 43% 10%;
+    --accent-foreground: 150 10% 97%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 150 10% 97%;
+
+    --border: 150 43% 15%;
+    --input: 150 43% 15%;
+    --ring: 142 71% 45%;
+
+    --radius: 0.5rem;
+
+    --chart-1: 142 71% 45%;
+    --chart-2: 0 84% 60%;
+    --chart-3: 217 91% 60%;
+    --chart-4: 47 95% 50%;
+    --chart-5: 283 39% 53%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Leaflet Map Customization */
+.leaflet-container {
+  background: hsl(var(--background)) !important;
+}
+
+.leaflet-control-attribution {
+  background: hsl(var(--background)) !important;
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+  border: 1px solid hsl(var(--border));
+}
+
+.leaflet-popup-tip {
+  background: hsl(var(--background)) !important;
+  border: 1px solid hsl(var(--border));
+}
+
+/* Map styles */
+.offline-map {
+  background: #f0f0f0;
+  position: relative;
+}
+
+.offline-map::after {
+  content: "Mapa sin conexión";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #666;
+  font-size: 1.2em;
+  pointer-events: none;
+}
+
+/* Optimizations for map performance */
+.leaflet-marker-icon {
+  will-change: transform;
+}
+
+.leaflet-fade-anim .leaflet-tile {
+  will-change: opacity;
+}
+
+/* Map container styles */
+#map {
+  height: 100%;
+  width: 100%;
+  background: hsl(var(--background));
+  z-index: 1;
+}
+
+/* Dark theme for map */
+.leaflet-container {
+  background: hsl(var(--background)) !important;
+}
+
+/* Only invert colors for dark theme */
+[data-map-style="dark"] .leaflet-tile {
+  filter: grayscale(1) invert(1) !important;
+}
+
+/* Style popups */
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+  border: 1px solid hsl(var(--border));
+}
+

@@ -7,77 +7,31 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <style>
-        :root {
-            --military-dark: #1a1f1c;
-            --military-green: #2a3428;
-            --accent-green: #4a5f3d;
-            --text-green: #a3c293;
-            --highlight: #98ff98;
-            --danger: #ff4444;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
             margin: 0;
             padding: 20px;
-            font-family: 'Courier New', monospace;
-            background-color: var(--military-dark);
-            color: var(--text-green);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, sans-serif;
+            background-color: #f5f5f5;
             -webkit-font-smoothing: antialiased;
         }
 
         .container {
-            display: grid;
-            grid-template-columns: 1fr 300px; /* Main content and sidebar */
-            gap: 20px;
-            height: 95vh;
             max-width: 100%;
+            margin: 0 auto;
             padding: 0 20px;
         }
 
-        .main-content {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .header {
-            margin-bottom: 20px;
-        }
-
         .dashboard {
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 15px;
-            padding: 20px;
-            background: var(--military-green);
-            border-radius: 8px;
-            border: 1px solid var(--accent-green);
-            height: 100%;
-        }
-
-        #map {
-            flex-grow: 1;
-            border-radius: 8px;
-            border: 1px solid var(--accent-green);
-            min-height: 0; /* Important for flex container */
-        }
-
-        .stat-card {
-            background: var(--military-dark);
-            padding: 15px;
-            border: 1px solid var(--accent-green);
-            border-radius: 4px;
-        }
-
-        /* Mobile responsive design */
-        @media (max-width: 768px) {
-            .container {
-                grid-template-columns: 1fr;
-            }
-            
-            .dashboard {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-            }
+            margin-bottom: 20px;
         }
 
         /* Ajustes específicos para PC */
@@ -113,28 +67,34 @@
         }
 
         .stat-card {
-            background: var(--military-green);
+            background: white;
             padding: 15px;
-            border: 1px solid var(--accent-green);
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
         .stat-card:hover {
-            border-color: var(--highlight);
-            box-shadow: 0 0 15px rgba(152, 255, 152, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
         .stat-title {
-            color: var(--text-green);
+            color: #666;
             font-size: 0.8em;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .stat-value {
-            color: var(--highlight);
-            font-weight: bold;
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #2c3e50;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         #map {
@@ -149,11 +109,10 @@
         }
 
         .header h1 {
-            color: var(--highlight);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            border-bottom: 2px solid var(--accent-green);
-            padding-bottom: 10px;
+            color: #2c3e50;
+            margin: 0;
+            font-size: 1.5em;
+            font-weight: 600;
         }
 
         .header p {
@@ -200,28 +159,38 @@
         }
 
         .time-select {
-            background: var(--military-green);
-            color: var(--text-green);
-            border: 1px solid var(--accent-green);
-            padding: 8px 12px;
+            padding: 8px;
             border-radius: 4px;
-        }
-
-        .time-select:hover {
-            border-color: var(--highlight);
-            color: var(--highlight);
+            border: 1px solid #ddd;
+            background: white;
+            font-size: 0.9em;
+            cursor: pointer;
+            margin-right: 8px;
+            transition: all 0.2s ease;
         }
 
         #toggleUpdates {
-            background: var(--accent-green);
-            color: var(--highlight);
-            border: 1px solid var(--accent-green);
+            background: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        #toggleUpdates:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        #toggleUpdates:active {
+            transform: translateY(1px);
         }
 
         #toggleUpdates.paused {
-            background: var(--military-dark);
-            color: var(--danger);
-            border-color: var(--danger);
+            background: #f44336;
         }
 
         /* Offline map style */
@@ -236,63 +205,32 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: var(--text-green);
+            color: #666;
             font-size: 1.2em;
             pointer-events: none;
-        }
-
-        /* Custom map style for dark mode */
-        .leaflet-container {
-            background: var(--military-dark) !important;
-        }
-
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--military-dark);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--accent-green);
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--highlight);
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <div class="main-content">
-            <div class="header">
-                <h1>GPS + BLE Tracker</h1>
-                <div class="controls">
-                    <select id="timeRange" class="time-select">
-                        <option value="5m">Últimos 5 minutos</option>
-                        <option value="15m">Últimos 15 minutos</option>
-                        <option value="30m">Últimos 30 minutos</option>
-                        <option value="1h">Última hora</option>
-                        <option value="3h">Últimas 3 horas</option>
-                        <option value="6h">Últimas 6 horas</option>
-                        <option value="12h">Últimas 12 horas</option>
-                        <option value="1d">Último día</option>
-                        <option value="3d">Últimos 3 días</option>
-                        <option value="1w">Última semana</option>
-                        <option value="2w">Últimas 2 semanas</option>
-                        <option value="1M">Último mes</option>
-                        <option value="3M">Últimos 3 meses</option>
-                    </select>
-                    <button id="toggleUpdates" class="time-select">
-                        Pausar actualizaciones
-                    </button>
-                </div>
+        <div class="header">
+            <h1>GPS + BLE Tracker</h1>
+            <div class="controls">
+                <select id="timeRange" class="time-select">
+                    <option value="5m">Últimos 5 minutos</option>
+                    <option value="15m">Últimos 15 minutos</option>
+                    <option value="30m">Últimos 30 minutos</option>
+                    <option value="1h">Última hora</option>
+                    <option value="3h">Últimas 3 horas</option>
+                    <option value="6h">Últimas 6 horas</option>
+                    <option value="12h">Últimas 12 horas</option>
+                    <option value="1d">Último día</option>
+                </select>
+                <button id="toggleUpdates" class="time-select">
+                    Pausar actualizaciones
+                </button>
             </div>
-            <div id="map"></div>
         </div>
 
         <div class="dashboard">
@@ -321,6 +259,11 @@
                 <div class="stat-value" id="last-update">-</div>
             </div>
         </div>
+
+        <div id="map"></div>
+
+    </div>
+
     </div>
 
     <script>
@@ -515,13 +458,6 @@
 
         // Iniciar actualizaciones
         startUpdates();
-
-        // Add after map initialization
-        /*
-        if (mapTiles) {
-            mapTiles.setUrl('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
-        }
-        */
     </script>
 </body>
 

@@ -1,171 +1,302 @@
 from flask import Flask, render_template, jsonify, request
 from pymongo import MongoClient
 from datetime import datetime, timedelta
-from flask_compress import Compress  # Para comprimir respuestas
+from flask_compress import Compress
+from flask_cors import CORS
+from collections import defaultdict
+import psutil  # For battery info
+import subprocess  # For WiFi info
 
 app = Flask(__name__)
-Compress(app)  # Habilitar compresión
+Compress(app)
+CORS(app)
 
-# Configuración MongoDB con índices
+# MongoDB setup
 client = MongoClient('mongodb://localhost:27017/')
 db = client.tracking_data
 collection = db.port2
 
-# Crear índices para mejorar el rendimiento
-collection.create_index([("timestamp", -1)])
-collection.create_index([("sequence", 1)])
+def calculate_devices_per_buffer(data, max_points=13):
+    """Calculate devices per buffer for the chart"""
+    if not data:
+        return []
+    
+    # Sort data by timestamp
+    sorted_data = sorted(data, key=lambda x: x['timestamp'])
+    
+    # Calculate devices per buffer
+    buffer_stats = []
+    for doc in sorted_data:
+        if 'devices' in doc:
+            buffer_stats.append({
+                'buffer': doc['sequence'],
+                'devices': len(doc['devices']),
+                'timestamp': doc['timestamp']
+            })
+    
+    # If we have more points than max_points, aggregate them
+    if len(buffer_stats) > max_points:
+        # Calculate step size
+        step = len(buffer_stats) // max_points
+        
+        # Aggregate points
+        aggregated_stats = []
+        for i in range(0, len(buffer_stats), step):
+            chunk = buffer_stats[i:i + step]
+            avg_devices = sum(stat['devices'] for stat in chunk) / len(chunk)
+            aggregated_stats.append({
+                'buffer': chunk[-1]['buffer'],
+                'devices': round(avg_devices, 1),
+                'timestamp': chunk[-1]['timestamp']
+            })
+        
+        buffer_stats = aggregated_stats[:max_points]
+    
+    return buffer_stats
 
-@app.route('/')
-def index():
-    """Página principal con el mapa"""
-    return render_template('index.html')
+def get_system_info():
+    """Get WiFi and battery information for Windows"""
+    try:
+        # Get battery info using psutil
+        battery = psutil.sensors_battery()
+        battery_percent = int(battery.percent) if battery else None
+        power_plugged = battery.power_plugged if battery else None
+
+        # Get WiFi info using netsh command (Windows specific)
+        try:
+            # Get wireless interface info
+            netsh_output = subprocess.check_output(
+                ['netsh', 'wlan', 'show', 'interfaces'], 
+                stderr=subprocess.STDOUT, 
+                text=True
+            )
+            
+            essid = None
+            signal_strength = None
+            
+            for line in netsh_output.split('\n'):
+                if 'SSID' in line and 'BSSID' not in line:
+                    essid = line.split(':')[1].strip()
+                if 'Signal' in line:
+                    try:
+                        # Windows provides signal strength as percentage
+                        signal_str = line.split(':')[1].strip().replace('%', '')
+                        signal_strength = int(signal_str)
+                    except:
+                        signal_strength = None
+
+        except Exception as e:
+            print(f"Error getting WiFi info: {e}")
+            essid = "Unknown"
+            signal_strength = None
+
+        return {
+            "wifi_name": essid or "Not Connected",
+            "signal_strength": signal_strength,
+            "battery_level": battery_percent,
+            "power_plugged": power_plugged
+        }
+    except Exception as e:
+        print(f"Error getting system info: {e}")
+        return {
+            "wifi_name": "Unknown",
+            "signal_strength": None,
+            "battery_level": None,
+            "power_plugged": None
+        }
 
 @app.route('/api/data')
 def get_data():
-    """API endpoint optimizado con rango de tiempo configurable"""
     try:
         time_range = request.args.get('timeRange', '5m')
-        print(f"Requested time range: {time_range}")
+        print(f"\nReceived request for timeRange: {time_range}")
         
-        try:
-            value = int(time_range[:-1])
-            unit = time_range[-1].lower()
-            
-            if unit == 'm':
-                delta = timedelta(minutes=value)
-            elif unit == 'h':
-                delta = timedelta(hours=value)
-            elif unit == 'd':
-                delta = timedelta(days=value)
-            else:
-                delta = timedelta(minutes=5)
-        except:
-            delta = timedelta(minutes=5)
+        # Parse time range
+        value = int(time_range[:-1])
+        unit = time_range[-1]
         
-        time_threshold = datetime.utcnow() - delta
-        print(f"Looking for data since: {time_threshold}")
+        if unit == 'h':
+            delta = timedelta(hours=value)
+        elif unit == 'd':
+            delta = timedelta(days=value)
+        else:  # 'm' for minutes
+            delta = timedelta(minutes=value)
+        
+        since = datetime.utcnow() - delta
+        print(f"Fetching data since: {since}")
+        
+        # Get data from MongoDB with sorting
+        data = list(collection.find(
+            {"timestamp": {"$gte": since}},
+            {"_id": 0}
+        ).sort("timestamp", 1))
+        
+        print(f"Found {len(data)} records")
 
-        # Query MongoDB with error handling
-        try:
-            data = list(collection.find(
-                {"timestamp": {"$gte": time_threshold}},
-                {
-                    '_id': 0,
-                    'timestamp': 1,
-                    'sequence': 1,
-                    'n_adv_raw': 1,
-                    'devices': 1,
-                    'gps_data': 1
-                }
-            ).sort('timestamp', 1))
-            
-            # Calculate unique devices and total advertisements
-            unique_devices = set()
-            total_advertisements = 0
-            
-            for record in data:
-                if 'devices' in record:
-                    for device in record['devices']:
+        # Process GPS points and buffer locations
+        gps_points = []
+        buffer_points = []
+        
+        for d in data:
+            # Process GPS data for trail
+            if 'gps_data' in d and isinstance(d['gps_data'], dict):
+                gps_data = d['gps_data']
+                if 'coordinates' in gps_data:
+                    coords = gps_data['coordinates']
+                    if isinstance(coords, dict) and 'latitude' in coords and 'longitude' in coords:
+                        try:
+                            latitude = float(coords['latitude'])
+                            longitude = float(coords['longitude'])
+                            if -90 <= latitude <= 90 and -180 <= longitude <= 180:
+                                # Add GPS point for trail
+                                gps_points.append({
+                                    "type": "Feature",
+                                    "geometry": {
+                                        "type": "Point",
+                                        "coordinates": [longitude, latitude]
+                                    },
+                                    "properties": {
+                                        "type": "gps",
+                                        "timestamp": d['timestamp'].isoformat(),
+                                        "speed": float(gps_data.get('speed', 0))
+                                    }
+                                })
+                                
+                                # Add buffer point with BLE data
+                                devices = d.get('devices', [])
+                                buffer_points.append({
+                                    "type": "Feature",
+                                    "geometry": {
+                                        "type": "Point",
+                                        "coordinates": [longitude, latitude]
+                                    },
+                                    "properties": {
+                                        "type": "buffer",
+                                        "timestamp": d['timestamp'].isoformat(),
+                                        "sequence": d.get('sequence', 0),
+                                        "n_devices": len(devices),
+                                        "n_adv_raw": d.get('n_adv_raw', 0),
+                                        "devices": [
+                                            {
+                                                "mac": dev.get('mac', 'unknown'),
+                                                "rssi": dev.get('rssi', 0),
+                                                "n_adv": dev.get('n_adv', 0)
+                                            }
+                                            for dev in devices
+                                        ]
+                                    }
+                                })
+                        except (ValueError, TypeError):
+                            continue
+
+        print(f"GPS points: {len(gps_points)}")
+        print(f"Buffer points: {len(buffer_points)}")
+
+        # Calculate BLE stats
+        unique_macs = set()
+        total_advertisements = 0
+        last_sequence = 0
+
+        for d in data:
+            if 'devices' in d and isinstance(d['devices'], list):
+                for device in d['devices']:
+                    if isinstance(device, dict):
                         if 'mac' in device:
-                            unique_devices.add(device['mac'])
+                            unique_macs.add(device['mac'])
                         if 'n_adv' in device:
                             total_advertisements += device['n_adv']
+            if 'sequence' in d:
+                last_sequence = max(last_sequence, d['sequence'])
 
-            # Convert to GeoJSON
-            features = []
-            latest_gps = None
-            
-            for record in data:
-                try:
-                    gps_data = record.get('gps_data')
-                    if not gps_data or not isinstance(gps_data, dict):
-                        continue
-                    
-                    coords = gps_data.get('coordinates', {})
-                    if not coords:
-                        continue
-                    
-                    try:
-                        longitude = float(coords.get('longitude', 0))
-                        latitude = float(coords.get('latitude', 0))
-                        
-                        if not (-180 <= longitude <= 180 and -90 <= latitude <= 90):
-                            continue
-                            
-                        feature = {
-                            "type": "Feature",
-                            "geometry": {
-                                "type": "Point",
-                                "coordinates": [longitude, latitude]
-                            },
-                            "properties": {
-                                "type": "gps",
-                                "timestamp": record['timestamp'].isoformat(),
-                                "speed": float(gps_data.get('speed', 0))
-                            }
-                        }
-                        features.append(feature)
-                        latest_gps = feature
-                        
-                    except (ValueError, TypeError) as e:
-                        print(f"Error converting coordinates: {e}")
-                        continue
-                        
-                except Exception as e:
-                    print(f"Error processing record: {e}")
-                    continue
-
-            response_data = {
-                "geojson": {
-                    "type": "FeatureCollection",
-                    "features": features
-                },
-                "stats": {
-                    "total_buffers": collection.estimated_document_count(),
-                    "recent_buffers": len(data),
-                    "recent_buffers_label": f"Buffers ({time_range.upper()})",
-                    "unique_devices": len(unique_devices),
-                    "total_advertisements": total_advertisements,
-                    "last_sequence": data[-1]['sequence'] if data else None,
-                    "last_timestamp": data[-1]['timestamp'].isoformat() if data else None
-                }
-            }
-            
-            return jsonify(response_data)
-            
-        except Exception as e:
-            print(f"MongoDB error: {e}")
-            return jsonify({"error": "Database error"}), 500
-
+        last_timestamp = max([d["timestamp"] for d in data]) if data else datetime.utcnow()
+        
+        # Calculate chart data
+        chart_data = calculate_devices_per_buffer(data)
+        
+        # Get system info
+        system_info = get_system_info()
+        
+        # Format response
+        response = {
+            "geojson": {
+                "type": "FeatureCollection",
+                "features": gps_points + buffer_points  # Combine both types of points
+            },
+            "stats": {
+                "total_buffers": len(data),
+                "recent_buffers": len(buffer_points),
+                "recent_buffers_label": f"Buffers ({time_range})",
+                "unique_devices": len(unique_macs),
+                "total_advertisements": total_advertisements,
+                "last_sequence": last_sequence,
+                "last_timestamp": last_timestamp.isoformat()
+            },
+            "chartData": chart_data,
+            "systemInfo": system_info  # Add system info to response
+        }
+        
+        print("Response prepared successfully")
+        return jsonify(response)
     except Exception as e:
-        print(f"Unexpected error: {e}")
-        return jsonify({"error": str(e)}), 500
+        print(f"Error in get_data: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "error": str(e),
+            "geojson": {"type": "FeatureCollection", "features": []},
+            "stats": {
+                "total_buffers": 0,
+                "recent_buffers": 0,
+                "recent_buffers_label": f"Buffers ({time_range})",
+                "unique_devices": 0,
+                "total_advertisements": 0,
+                "last_sequence": 0,
+                "last_timestamp": datetime.utcnow().isoformat()
+            },
+            "chartData": [],
+            "systemInfo": {
+                "wifi_name": "Error",
+                "signal_strength": None,
+                "battery_level": None,
+                "power_plugged": None
+            }
+        }), 500
 
 if __name__ == '__main__':
-    import argparse
+    # Test MongoDB connection
+    try:
+        print("\nTesting MongoDB connection...")
+        count = collection.count_documents({})
+        print(f"Connected successfully. Found {count} documents in collection")
+        
+        # Print a sample document
+        sample = collection.find_one()
+        if sample:
+            print("\nSample document structure:")
+            for key, value in sample.items():
+                print(f"{key}: {type(value)}")
+    except Exception as e:
+        print(f"MongoDB connection error: {e}")
     
+    import argparse
     parser = argparse.ArgumentParser(description='Flask BLE GPS Tracker Server')
     parser.add_argument('--host', type=str, default='0.0.0.0')
     parser.add_argument('--port', type=int, default=5000)
     
     args = parser.parse_args()
     
-    # Configurar Flask para producción
-    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 300  # Cache de 5 minutos
-    app.config['TEMPLATES_AUTO_RELOAD'] = False
-    
-    print(f"\nServidor iniciado!")
-    print(f"Para acceder desde dispositivos en la red local:")
+    print(f"\nServer started!")
+    print(f"Access from local network devices:")
     
     import socket
     hostname = socket.gethostname()
     local_ip = socket.gethostbyname(hostname)
-    print(f"1. Usando IP local: http://{local_ip}:{args.port}")
-    print(f"2. Usando hostname: http://{hostname}:{args.port}")
+    print(f"1. Using local IP: http://{local_ip}:{args.port}")
+    print(f"2. Using hostname: http://{hostname}:{args.port}")
     
     app.run(
         host=args.host,
         port=args.port,
-        debug=False,  # Deshabilitar debug en producción
+        debug=True,
         threaded=True
     )
