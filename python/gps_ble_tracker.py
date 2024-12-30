@@ -1,12 +1,9 @@
 import serial
 import time
-import json
 from datetime import datetime
 import pynmea2
 import os
 from pymongo import MongoClient
-from icecream import ic
-import struct
 import logging
 from uart import UARTReceiver
 from enum import Enum
