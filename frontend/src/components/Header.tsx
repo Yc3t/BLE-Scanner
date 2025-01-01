@@ -33,10 +33,10 @@ export function Header({
 }: HeaderProps) {
   return (
     <div className="flex flex-col gap-2 mb-4 border-b border-green-500/20 pb-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
         <div className="flex flex-col gap-2">
           <Select value={timeRange} onValueChange={onTimeRangeChange}>
-            <SelectTrigger className="w-[180px] bg-black/40 border-green-500/30 text-green-500">
+            <SelectTrigger className="w-full lg:w-[180px] bg-black/40 border-green-500/30 text-green-500">
               <SelectValue placeholder="Select timeframe" />
             </SelectTrigger>
             <SelectContent className="bg-black text-green-500 border-green-500/30">
@@ -49,7 +49,7 @@ export function Header({
           </Select>
           <Button 
             variant="destructive" 
-            className="w-[180px] gap-2"
+            className="w-full lg:w-[180px] gap-2"
             onClick={onToggleUpdates}
           >
             <RefreshCw className={`w-4 h-4 ${isUpdating ? 'animate-spin' : ''}`} />
@@ -57,28 +57,28 @@ export function Header({
           </Button>
         </div>
 
-        <div className="px-12 flex items-center border border-green-500/20 rounded-lg bg-black/40 h-[82px]">
+        <div className="px-4 lg:px-12 flex items-center border border-green-500/20 rounded-lg bg-black/40 h-[82px]">
           <div className="flex items-center gap-4">
-            <Radio className="w-8 h-8 text-green-500" />
+            <Radio className="w-6 lg:w-8 h-6 lg:h-8 text-green-500" />
             <div className="flex flex-col">
-              <h1 className="text-3xl font-bold tracking-[0.3em]">TRACKER</h1>
+              <h1 className="text-2xl lg:text-3xl font-bold tracking-[0.3em]">TRACKER</h1>
               <div className="flex items-center gap-2">
                 <Satellite className="w-4 h-4 text-green-500/70" />
-                <span className="text-lg font-semibold tracking-wider text-green-500/70">GPS</span>
+                <span className="text-base lg:text-lg font-semibold tracking-wider text-green-500/70">GPS</span>
                 <span className="text-green-500/40 mx-1">|</span>
                 <Bluetooth className="w-4 h-4 text-green-500/70" />
-                <span className="text-lg font-semibold tracking-wider text-green-500/70">BLE</span>
+                <span className="text-base lg:text-lg font-semibold tracking-wider text-green-500/70">BLE</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="w-[180px] space-y-2">
-          <div className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-md border border-green-500/20">
+        <div className="w-full lg:w-[180px] flex lg:flex-col gap-2">
+          <div className="flex-1 lg:flex-none flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-md border border-green-500/20">
             <Signal className="w-4 h-4 text-green-500/70" />
             <span className="text-sm text-green-500/70">Signal: {signalStrength}%</span>
           </div>
-          <div className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-md border border-green-500/20">
+          <div className="flex-1 lg:flex-none flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-md border border-green-500/20">
             <Battery className="w-4 h-4 text-green-500/70" />
             <span className="text-sm text-green-500/70">Battery: {batteryLevel}%</span>
           </div>

@@ -20,7 +20,7 @@ export function DataSection({
 }: DataSectionProps) {
   if (!stats) {
     return (
-      <div className="w-96 space-y-3">
+      <div className="w-full lg:w-96 space-y-3">
         <div className="bg-black/40 border border-green-500/20 rounded-lg p-4">
           Loading data...
         </div>
@@ -29,7 +29,7 @@ export function DataSection({
   }
 
   return (
-    <div className="w-96 space-y-3">
+    <div className="w-full lg:w-96 space-y-3">
       <GPSDataCard 
         title={`BLE STATUS - ${currentTime}`}
         icon={<Bluetooth className="w-4 h-4" />}

@@ -8,7 +8,7 @@ import logging
 from uart import UARTReceiver
 from enum import Enum
 
-
+## Log level
 class LogLevel(str, Enum):
     INFO = "info"
     DEBUG = "debug"
@@ -23,7 +23,7 @@ class CombinedTracker(UARTReceiver):
         mongo_uri="mongodb://localhost:27017/",
         log_level="info"
     ):
-        """Inicializa el rastreador combinado GPS + BLE"""
+        """Inicializa el tracker"""
         # Configurar logging
         self.log_level = log_level.lower()
         self._setup_logging()
@@ -35,7 +35,7 @@ class CombinedTracker(UARTReceiver):
         # Configuración MongoDB
         self.client = MongoClient(mongo_uri)
         self.db = self.client.tracking_data
-        self.collection = self.db.pz1
+        self.collection = self.db.p10
 
         # Configuración GPS
         self.gps_port = gps_port
@@ -181,7 +181,7 @@ class CombinedTracker(UARTReceiver):
                     self.logger.info(f"Total de buffers procesados: {buffers_procesados}")
                     break
 
-                # Update GPS data regularly
+                # Update GPS data 
                 self._parse_gps()
 
                 # Busca la cabecera BLE

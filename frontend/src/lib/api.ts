@@ -65,24 +65,40 @@ class TrackerAPI {
   private baseUrl: string
 
   constructor() {
-    this.baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+    // Try to get the API URL from environment variables
+    const envUrl = import.meta.env.VITE_API_URL
+    
+    // If we're accessing via IP address directly
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '0.0.0.0') {
+      this.baseUrl = `http://${window.location.hostname}:5000`
+    } else {
+      // Fallback to environment variable or localhost
+      this.baseUrl = envUrl || 'http://localhost:5000'
+    }
+    
     console.log('API Base URL:', this.baseUrl)
   }
 
   async getData(timeRange: TimeRange = '30d'): Promise<TrackerData> {
     try {
-      console.log(`Fetching data for timeRange: ${timeRange}`)
-      const response = await fetch(`${this.baseUrl}/api/data?timeRange=${timeRange}`)
+      const url = `${this.baseUrl}/api/data?timeRange=${timeRange}`
+      console.log(`Fetching data from: ${url}`)
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      })
       
       if (!response.ok) {
         console.error('API Error:', response.status, response.statusText)
         const text = await response.text()
         console.error('Error response:', text)
-        throw new Error('Network response was not ok')
+        throw new Error(`Network response was not ok: ${response.status}`)
       }
       
       const data = await response.json()
-      console.log('API Response:', data)
       return data
     } catch (error) {
       console.error('Error fetching data:', error)

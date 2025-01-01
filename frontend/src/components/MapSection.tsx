@@ -192,28 +192,28 @@ export function MapSection({ gpsData, zoom, onZoomIn, onZoomOut, features, mapSt
 
   return (
     <div 
-      className="flex-grow relative border border-green-500/20 rounded-lg overflow-hidden"
+      className="flex-grow relative border border-green-500/20 rounded-lg overflow-hidden min-h-[300px] lg:min-h-0"
       data-map-style={mapStyle}
     >
       <div id="map" className="w-full h-full" />
       
-      <div className="absolute top-4 left-4 bg-black/80 p-3 rounded-lg border border-green-500/30 space-y-1 z-[1000]">
-        <p className="text-sm flex items-center gap-2">
-          <Target className="w-4 h-4" />
+      <div className="absolute top-4 left-4 bg-black/80 p-2 lg:p-3 rounded-lg border border-green-500/30 space-y-1 z-[1000]">
+        <p className="text-xs lg:text-sm flex items-center gap-2">
+          <Target className="w-3 h-3 lg:w-4 lg:h-4" />
           LAT: {gpsData.latitude.toFixed(6)}
         </p>
-        <p className="text-sm flex items-center gap-2">
-          <Target className="w-4 h-4" />
+        <p className="text-xs lg:text-sm flex items-center gap-2">
+          <Target className="w-3 h-3 lg:w-4 lg:h-4" />
           LON: {gpsData.longitude.toFixed(6)}
         </p>
       </div>
 
       <div className="absolute top-4 right-4 flex flex-col gap-2 z-[1000]">
-        <Button onClick={onZoomIn} variant="outline" size="icon" className="border-green-500/30 bg-black/80 hover:bg-black/60">
-          <ZoomIn className="w-4 h-4" />
+        <Button onClick={onZoomIn} variant="outline" size="icon" className="h-8 w-8 lg:h-9 lg:w-9 border-green-500/30 bg-black/80 hover:bg-black/60">
+          <ZoomIn className="w-3 h-3 lg:w-4 lg:h-4" />
         </Button>
-        <Button onClick={onZoomOut} variant="outline" size="icon" className="border-green-500/30 bg-black/80 hover:bg-black/60">
-          <ZoomOut className="w-4 h-4" />
+        <Button onClick={onZoomOut} variant="outline" size="icon" className="h-8 w-8 lg:h-9 lg:w-9 border-green-500/30 bg-black/80 hover:bg-black/60">
+          <ZoomOut className="w-3 h-3 lg:w-4 lg:h-4" />
         </Button>
       </div>
     </div>

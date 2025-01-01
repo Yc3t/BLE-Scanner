@@ -76,7 +76,7 @@ export default function App() {
     : [37.7749, -122.4194]
 
   return (
-    <div className="min-h-screen h-screen bg-[#0a120a] text-green-500 p-4 font-mono flex flex-col">
+    <div className="min-h-screen h-screen bg-[#0a120a] text-green-500 p-2 sm:p-4 font-mono flex flex-col">
       <Header 
         signalStrength={signalStrength} 
         batteryLevel={batteryLevel}
@@ -87,7 +87,7 @@ export default function App() {
         isUpdating={isUpdating}
         onToggleUpdates={toggleUpdates}
       />
-      <div className="flex-grow flex gap-4 mt-4">
+      <div className="flex-grow flex flex-col lg:flex-row gap-4 mt-4 overflow-auto">
         <MapSection 
           gpsData={{ 
             latitude: latestPosition[1],

@@ -14,7 +14,7 @@ CORS(app)
 # MongoDB setup
 client = MongoClient('mongodb://localhost:27017/')
 db = client.tracking_data
-collection = db.pz1
+collection = db.p10
 
 def calculate_devices_per_buffer(data, max_points=13):
     """Calculate devices per buffer for the chart"""
@@ -223,6 +223,11 @@ def get_data():
         # Get system info
         system_info = get_system_info()
         
+        # Get last record safely
+        last_record = data[-1] if data else None
+        last_gps = last_record.get('gps_data', {}) if last_record else {}
+        last_coordinates = last_gps.get('coordinates', {}) if isinstance(last_gps, dict) else {}
+        
         # Format response
         response = {
             "geojson": {
@@ -237,10 +242,10 @@ def get_data():
                 "total_advertisements": total_advertisements,
                 "last_sequence": last_sequence,
                 "last_timestamp": last_timestamp.isoformat(),
-                "last_speed": float(data[-1].get('gps_data', {}).get('speed', 0) or 0),
-                "last_latitude": float(data[-1].get('gps_data', {}).get('coordinates', {}).get('latitude') or 0),
-                "last_longitude": float(data[-1].get('gps_data', {}).get('coordinates', {}).get('longitude') or 0),
-                "last_n_mac": int(data[-1].get('n_mac', 0))
+                "last_speed": float(last_gps.get('speed', 0) if isinstance(last_gps, dict) else 0),
+                "last_latitude": float(last_coordinates.get('latitude', 0) if isinstance(last_coordinates, dict) else 0),
+                "last_longitude": float(last_coordinates.get('longitude', 0) if isinstance(last_coordinates, dict) else 0),
+                "last_n_mac": int(last_record.get('n_mac', 0) if last_record else 0)
             },
             "chartData": chart_data,
             "systemInfo": system_info
@@ -300,10 +305,31 @@ if __name__ == '__main__':
     print(f"Access from local network devices:")
     
     import socket
+    def get_ip_addresses():
+        ip_list = []
+        try:
+            # Get all network interfaces
+            interfaces = socket.getaddrinfo(host=socket.gethostname(), port=None, family=socket.AF_INET)
+            for interface in interfaces:
+                ip = interface[4][0]
+                if not ip.startswith('127.'):  # Filter out localhost
+                    ip_list.append(ip)
+            return list(set(ip_list))  # Remove duplicates
+        except Exception as e:
+            print(f"Error getting IP addresses: {e}")
+            return []
+
+    # Get and print all available IP addresses
+    ip_addresses = get_ip_addresses()
+    print("\nAvailable IP addresses:")
+    for ip in ip_addresses:
+        print(f"Backend: http://{ip}:{args.port}")
+        print(f"Frontend: http://{ip}:5173")
+    
+    print("\nOr use hostname:")
     hostname = socket.gethostname()
-    local_ip = socket.gethostbyname(hostname)
-    print(f"1. Using local IP: http://{local_ip}:{args.port}")
-    print(f"2. Using hostname: http://{hostname}:{args.port}")
+    print(f"Backend: http://{hostname}:{args.port}")
+    print(f"Frontend: http://{hostname}:5173")
     
     app.run(
         host=args.host,
