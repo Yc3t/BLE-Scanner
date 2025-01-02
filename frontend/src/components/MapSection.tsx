@@ -108,8 +108,8 @@ export function MapSection({ gpsData, zoom, onZoomIn, onZoomOut, features, mapSt
           })
           .bindPopup(`
             <div class="p-2">
-              <div>Time: ${new Date(feature.properties.timestamp).toLocaleTimeString()}</div>
-              <div>Speed: ${feature.properties.speed.toFixed(1)} km/h</div>
+              <div>Hora: ${new Date(feature.properties.timestamp).toLocaleTimeString()}</div>
+              <div>Velocidad: ${feature.properties.speed.toFixed(1)} km/h</div>
             </div>
           `)
           .addTo(gpsLayerRef.current)
@@ -148,7 +148,7 @@ export function MapSection({ gpsData, zoom, onZoomIn, onZoomOut, features, mapSt
           .bindPopup(`
             <div class="p-3 text-green-500">
               <h3 class="text-sm font-bold mb-2">Buffer ${feature.properties.sequence}</h3>
-              <p class="text-xs">Devices: ${feature.properties.n_devices}</p>
+              <p class="text-xs">Dispositivos: ${feature.properties.n_devices}</p>
             </div>
           `, {
             className: 'buffer-popup'

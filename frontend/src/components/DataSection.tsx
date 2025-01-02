@@ -22,7 +22,7 @@ export function DataSection({
     return (
       <div className="w-full lg:w-96 space-y-3">
         <div className="bg-black/40 border border-green-500/20 rounded-lg p-4">
-          Loading data...
+          Cargando datos...
         </div>
       </div>
     )
@@ -31,26 +31,26 @@ export function DataSection({
   return (
     <div className="w-full lg:w-96 space-y-3">
       <GPSDataCard 
-        title={`BLE STATUS - ${currentTime}`}
+        title={`ESTADO BLE - ${currentTime}`}
         icon={<Bluetooth className="w-4 h-4" />}
       >
         <div className="grid grid-cols-2 gap-2 text-sm">
-          <div>Total Buffers: {stats.total_buffers.toLocaleString()}</div>
+          <div>Buffers Totales: {stats.total_buffers.toLocaleString()}</div>
           <div>{stats.recent_buffers_label}: {stats.recent_buffers.toLocaleString()}</div>
           <div>Dispositivos: {stats.unique_devices.toLocaleString()}</div>
-          <div>Advertisements: {stats.total_advertisements.toLocaleString()}</div>
+          <div>Anuncios: {stats.total_advertisements.toLocaleString()}</div>
         </div>
       </GPSDataCard>
 
       <GPSDataCard 
-        title="LAST UPDATE" 
+        title="ÚLTIMA ACTUALIZACIÓN" 
         icon={<Satellite className="w-4 h-4" />}
       >
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div>Seq: #{stats.last_sequence}</div>
-          <div>Time: {new Date(stats.last_timestamp).toLocaleTimeString()}</div>
-          <div>Devices: {stats.last_n_mac}</div>
-          <div>Speed: {(stats.last_speed * 1.852).toFixed(1)} km/h</div>
+          <div>Hora: {new Date(stats.last_timestamp).toLocaleTimeString()}</div>
+          <div>Dispositivos: {stats.last_n_mac}</div>
+          <div>Velocidad: {(stats.last_speed * 1.852).toFixed(1)} km/h</div>
           <div>Lat: {stats.last_latitude.toFixed(6)}°</div>
           <div>Lon: {stats.last_longitude.toFixed(6)}°</div>
         </div>

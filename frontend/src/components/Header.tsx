@@ -76,11 +76,11 @@ export function Header({
         <div className="w-full lg:w-[180px] flex lg:flex-col gap-2">
           <div className="flex-1 lg:flex-none flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-md border border-green-500/20">
             <Signal className="w-4 h-4 text-green-500/70" />
-            <span className="text-sm text-green-500/70">Signal: {signalStrength}%</span>
+            <span className="text-sm text-green-500/70">Señal: {signalStrength}%</span>
           </div>
           <div className="flex-1 lg:flex-none flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-md border border-green-500/20">
             <Battery className="w-4 h-4 text-green-500/70" />
-            <span className="text-sm text-green-500/70">Battery: {batteryLevel}%</span>
+            <span className="text-sm text-green-500/70">Batería: {batteryLevel}%</span>
           </div>
         </div>
       </div>

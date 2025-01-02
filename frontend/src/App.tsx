@@ -51,7 +51,7 @@ export default function App() {
   useEffect(() => {
     const timer = setInterval(() => {
       const now = new Date()
-      setCurrentTime(now.toLocaleTimeString('en-US', { 
+      setCurrentTime(now.toLocaleTimeString('es-ES', { 
         hour12: false,
         hour: '2-digit',
         minute: '2-digit',

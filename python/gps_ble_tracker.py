@@ -35,7 +35,7 @@ class CombinedTracker(UARTReceiver):
         # Configuración MongoDB
         self.client = MongoClient(mongo_uri)
         self.db = self.client.tracking_data
-        self.collection = self.db.p10
+        self.collection = self.db.test9
 
         # Configuración GPS
         self.gps_port = gps_port
