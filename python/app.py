@@ -14,7 +14,7 @@ CORS(app)
 # MongoDB setup
 client = MongoClient('mongodb://localhost:27017/')
 db = client.tracking_data
-collection = db.p10
+collection = db.test9
 
 def calculate_devices_per_buffer(data, max_points=13):
     """Calculate devices per buffer for the chart"""

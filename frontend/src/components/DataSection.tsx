@@ -38,7 +38,7 @@ export function DataSection({
           <div>Buffers Totales: {stats.total_buffers.toLocaleString()}</div>
           <div>{stats.recent_buffers_label}: {stats.recent_buffers.toLocaleString()}</div>
           <div>Dispositivos: {stats.unique_devices.toLocaleString()}</div>
-          <div>Anuncios: {stats.total_advertisements.toLocaleString()}</div>
+          <div>Advertisements: {stats.total_advertisements.toLocaleString()}</div>
         </div>
       </GPSDataCard>
 

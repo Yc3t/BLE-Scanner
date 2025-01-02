@@ -1,0 +1,20 @@
+2025-01-02 08:06:02,174 - INFO - Iniciando rastreador combinado GPS + BLE
+2025-01-02 08:06:02,190 - INFO - GPS conectado en COM29
+2025-01-02 08:06:02,191 - INFO - Iniciando captura por 10 segundos
+2025-01-02 08:06:02,192 - INFO - === Iniciando recepción de buffers combinados ===
+2025-01-02 08:06:06,965 - INFO - 
+├─ Secuencia: #32
+├─ Dispositivos: 14 (D2:06:3F:C9:74:D5(RSSI:-78dB), 81:50:40:BF:39:42(RSSI:-75dB), D7:F2:1B:A8:00:4D(RSSI:-80dB), ... +11 más)
+├─ Anuncios raw: 147
+└─ GPS: ✓
+   └─ Pos: 37.689702, -0.963529 (17.19 knots)
+2025-01-02 08:06:13,971 - INFO - 
+├─ Secuencia: #33
+├─ Dispositivos: 11 (D2:06:3F:C9:74:D5(RSSI:-72dB), 81:50:40:BF:39:42(RSSI:-59dB), D7:F2:1B:A8:00:4D(RSSI:-85dB), ... +8 más)
+├─ Anuncios raw: 132
+└─ GPS: ✓
+   └─ Pos: 37.689550, -0.963399 (10.73 knots)
+2025-01-02 08:06:14,017 - INFO - Tiempo de ejecución (10s) completado
+2025-01-02 08:06:14,017 - INFO - Total de buffers procesados: 2
+2025-01-02 08:06:14,024 - INFO - Conexión GPS cerrada
+2025-01-02 08:06:14,024 - INFO - Conexión MongoDB cerrada
