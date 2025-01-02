@@ -1,0 +1,8 @@
+flask>=2.0.0
+flask-compress>=1.13.0
+flask-cors>=4.0.0
+pymongo>=4.5.0
+pynmea2>=1.19.0
+pyserial>=3.5
+psutil>=5.9.0
+python-dotenv>=1.0.0 

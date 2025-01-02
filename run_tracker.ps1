@@ -1,4 +1,3 @@
-# PowerShell script to run GPS BLE tracker continuously
 Write-Host "Iniciando bucle del tracker GPS BLE..."
 
 while ($true) {
