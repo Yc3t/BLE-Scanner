@@ -156,8 +156,8 @@ static void reset_buffer(void) {
     memset(hash_table, 0, sizeof(hash_table));
     memset(buffer_header.header, UART_HEADER_MAGIC, UART_HEADER_LENGTH);
     buffer_header.sequence = msg_sequence++;
-    buffer_header.n_mac = 0;     // Explícito
-    buffer_header.n_adv_raw = 0; // Explícito
+    buffer_header.n_mac = 0;     
+    buffer_header.n_adv_raw = 0; 
     hash_entries = 0;
 }
 
