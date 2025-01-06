@@ -4,9 +4,6 @@ Este proyecto implementa un sistema de escaneo BLE (Bluetooth Low Energy) con al
 
 1. Scanner BLE (Zephyr RTOS)
 2. Recolector de datos con MongoDB
-
-
-
 ## Componentes
 
 ### 1. Scanner BLE (main.c)
