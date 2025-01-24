@@ -14,8 +14,8 @@ class LogLevel(str, Enum):
     DEBUG = "debug"
 
 class UARTMongoReceiver(UARTReceiver):
-    def __init__(self, port='/dev/ttyUSB0', baudrate=115200, 
-                 mongo_uri="mongodb://0.0.0.0:27017/",
+    def __init__(self, port='COM20', baudrate=115200, 
+                 mongo_uri="mongodb://localhost:27017/",
                  log_level="info"):
         """Inicializa el receptor UART con MongoDB"""
         self.log_level = log_level.lower()
@@ -27,16 +27,10 @@ class UARTMongoReceiver(UARTReceiver):
         
         # Conexión a MongoDB
         try:
-            # Add MongoDB connection options for better network handling
-            self.client = MongoClient(mongo_uri, 
-                                    serverSelectionTimeoutMS=5000,  # 5 second timeout
-                                    connectTimeoutMS=5000,
-                                    socketTimeoutMS=5000)
-            # Test the connection
-            self.client.server_info()
+            self.client = MongoClient(mongo_uri)
             self.db = self.client.ble_scanner
             self.collection = self.db.test3
-            self.logger.info(f"Conexión a MongoDB establecida en {mongo_uri}")
+            self.logger.info("Conexión a MongoDB establecida")
         except Exception as e:
             self.logger.error(f"Error conectando a MongoDB: {e}")
             raise
@@ -177,13 +171,13 @@ class UARTMongoReceiver(UARTReceiver):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Receptor BLE Scanner UART MongoDB')
-    parser.add_argument('--port', type=str, default='/dev/ttyUSB0',  # Changed default port
-                      help='Puerto serial (default: /dev/ttyUSB0)')
+    parser.add_argument('--port', type=str, default='COM20',
+                      help='Puerto serial (default: COM20)')
     parser.add_argument('--duration', type=int,
                       help='Duración de la captura en segundos')
     parser.add_argument('--mongo-uri', type=str, 
-                      default="mongodb://0.0.0.0:27017/",  # Changed default MongoDB URI
-                      help='URI de MongoDB (default: mongodb://0.0.0.0:27017/)')
+                      default="mongodb://localhost:27017/",
+                      help='URI de MongoDB (default: mongodb://localhost:27017/)')
     parser.add_argument('--log-level', type=str,
                       choices=['info', 'debug'],
                       default='info',
