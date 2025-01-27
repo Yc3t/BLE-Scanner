@@ -43,6 +43,9 @@ Script Python que:
 pip install pyserial pymongo
 ```
 
+### GPS Tracker
+Tracker frontend
+
 #### Uso
 ```bash
 python uart-mongo.py --port /dev/ttyUSB0 --mongo mongodb://localhost:27017/
