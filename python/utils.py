@@ -194,30 +194,78 @@ def analyze_buffer_stats(data, df):
         'total_buffers': len(data),
         'total_devices': df['mac'].nunique(),
         'total_advertisements': df['n_adv_raw'].sum(),
-        'avg_devices_per_buffer': df.groupby('sequence')['mac'].nunique().mean(),
+        'avg_devices_per_buffer': sum(len(buffer['devices']) for buffer in data) / len(data),
         'avg_rssi': df['rssi'].mean(),
         'time_span_hours': (df['timestamp'].max() - df['timestamp'].min()).total_seconds() / 3600
     }
     
-    # Create single plot for devices per buffer
-    fig, ax = plt.subplots(figsize=(12, 6))
+    # Create figure with 2 subplots
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
     
-    # Calculate devices per buffer
+    # Get sequence numbers and timestamps
+    sequences = df['sequence'].unique()
+    timestamps = df.groupby('sequence')['timestamp'].first()
     devices_per_buffer = df.groupby('sequence')['mac'].nunique()
     
-    # Create line plot
-    ax.plot(devices_per_buffer.index, devices_per_buffer.values, 
-           marker='o', linestyle='-', color='blue')
+    # Plot 1: Devices per buffer with sequence gaps highlighted
+    ax1.plot(sequences, devices_per_buffer.values, 
+            marker='o', linestyle='-', color='blue', label='Devices')
     
-    # Customize plot
-    ax.set_title('Dispositivos por buffer')
-    ax.set_xlabel('Secuencia Buffer')
-    ax.set_ylabel('Número de dispositivos')
-    ax.grid(True)
+    # Highlight sequence gaps
+    prev_seq = sequences[0]
+    for seq in sequences[1:]:
+        if seq - prev_seq > 1:
+            ax1.axvspan(prev_seq, seq, color='red', alpha=0.2)
+            ax1.text((prev_seq + seq)/2, ax1.get_ylim()[1], 
+                    f'Gap\n({seq-prev_seq-1})', 
+                    ha='center', va='bottom')
+        prev_seq = seq
     
-    # Set integer ticks for x-axis
-    ax.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
+    ax1.set_title('Devices per Buffer with Sequence Gaps')
+    ax1.set_xlabel('Buffer Sequence')
+    ax1.set_ylabel('Number of Devices')
+    ax1.grid(True)
+    
+    # Plot 2: Time between buffers
+    time_diffs = timestamps.diff().dt.total_seconds()
+    ax2.plot(sequences[1:], time_diffs[1:], 
+            marker='o', linestyle='-', color='green', label='Time Interval')
+    ax2.set_title('Time Between Consecutive Buffers')
+    ax2.set_xlabel('Buffer Sequence')
+    ax2.set_ylabel('Time (seconds)')
+    ax2.grid(True)
+    
+    # Add statistics to the plot
+    stats_text = (
+        f"Total Buffers: {stats['total_buffers']}\n"
+        f"Total Unique Devices: {stats['total_devices']}\n"
+        f"Avg Devices/Buffer: {stats['avg_devices_per_buffer']:.2f}\n"
+        f"Time Span: {stats['time_span_hours']:.2f} hours\n"
+        f"Avg RSSI: {stats['avg_rssi']:.1f} dBm"
+    )
+    
+    # Add text box with statistics
+    plt.figtext(1.02, 0.7, stats_text, 
+                bbox=dict(facecolor='white', alpha=0.8, edgecolor='gray'),
+                fontsize=10)
     
     plt.tight_layout()
+    
+    # Calculate additional sequence statistics
+    sequence_gaps = []
+    prev_seq = sequences[0]
+    for seq in sequences[1:]:
+        if seq - prev_seq > 1:
+            sequence_gaps.append((prev_seq, seq, seq-prev_seq-1))
+        prev_seq = seq
+    
+    if sequence_gaps:
+        stats['sequence_gaps'] = sequence_gaps
+        stats['total_gaps'] = len(sequence_gaps)
+        stats['total_missed_sequences'] = sum(gap[2] for gap in sequence_gaps)
+    else:
+        stats['sequence_gaps'] = []
+        stats['total_gaps'] = 0
+        stats['total_missed_sequences'] = 0
     
     return stats, fig 

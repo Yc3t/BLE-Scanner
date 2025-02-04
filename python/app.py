@@ -14,7 +14,7 @@ CORS(app)
 # MongoDB setup
 client = MongoClient('mongodb://localhost:27017/')
 db = client.tracking_data
-collection = db.portfinal
+collection = db.p10
 
 def calculate_devices_per_buffer(data, max_points=13):
     """Calculate devices per buffer for the chart"""
@@ -63,36 +63,40 @@ def get_system_info():
         power_plugged = battery.power_plugged if battery else None
 
         # Get WiFi info using netsh command (Windows specific)
+        wifi_info = {
+            "wifi_name": "Unknown",
+            "signal_strength": None
+        }
+        
         try:
-            # Get wireless interface info
+            # Get wireless interface info with error handling
             netsh_output = subprocess.check_output(
                 ['netsh', 'wlan', 'show', 'interfaces'], 
                 stderr=subprocess.STDOUT, 
-                text=True
+                text=True,
+                timeout=5  # Add timeout
             )
-            
-            essid = None
-            signal_strength = None
             
             for line in netsh_output.split('\n'):
                 if 'SSID' in line and 'BSSID' not in line:
-                    essid = line.split(':')[1].strip()
+                    wifi_info["wifi_name"] = line.split(':')[1].strip()
                 if 'Signal' in line:
                     try:
-                        # Windows provides signal strength as percentage
                         signal_str = line.split(':')[1].strip().replace('%', '')
-                        signal_strength = int(signal_str)
+                        wifi_info["signal_strength"] = int(signal_str)
                     except:
-                        signal_strength = None
+                        pass
 
+        except subprocess.TimeoutExpired:
+            print("Warning: WiFi info command timed out")
+        except subprocess.CalledProcessError as e:
+            print(f"Warning: Could not get WiFi info - {str(e)}")
         except Exception as e:
-            print(f"Error getting WiFi info: {e}")
-            essid = "Unknown"
-            signal_strength = None
+            print(f"Warning: Unexpected error getting WiFi info - {str(e)}")
 
         return {
-            "wifi_name": essid or "Not Connected",
-            "signal_strength": signal_strength,
+            "wifi_name": wifi_info["wifi_name"],
+            "signal_strength": wifi_info["signal_strength"],
             "battery_level": battery_percent,
             "power_plugged": power_plugged
         }
@@ -111,27 +115,14 @@ def get_data():
         time_range = request.args.get('timeRange', '5m')
         print(f"\nReceived request for timeRange: {time_range}")
         
-        # Parse time range
-        value = int(time_range[:-1])
-        unit = time_range[-1]
-        
-        if unit == 'h':
-            delta = timedelta(hours=value)
-        elif unit == 'd':
-            delta = timedelta(days=value)
-        else:  # 'm' for minutes
-            delta = timedelta(minutes=value)
-        
-        since = datetime.utcnow() - delta
-        print(f"Fetching data since: {since}")
-        
-        # Get data from MongoDB with sorting
+        # Get all records from MongoDB with sorting
+        print("Fetching all available records from database...")
         data = list(collection.find(
-            {"timestamp": {"$gte": since}},
+            {},  # Empty query to get all records
             {"_id": 0}
-        ).sort("timestamp", 1))
+        ).sort("timestamp", -1))  # Sort by timestamp in descending order
         
-        print(f"Found {len(data)} records")
+        print(f"Found {len(data)} total records in database")
 
         # Process GPS points and buffer locations
         gps_points = []
