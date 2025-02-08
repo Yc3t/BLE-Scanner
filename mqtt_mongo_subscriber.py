@@ -41,7 +41,7 @@ class MQTTMongoSubscriber:
                                           socketTimeoutMS=5000)
             self.mongo_client.server_info()  # Test connection
             self.db = self.mongo_client.ble_scanner
-            self.collection = self.db.session2
+            self.collection = self.db.session3
             self.logger.info(f"Connected to MongoDB at {mongo_uri}")
         except Exception as e:
             self.logger.error(f"Error connecting to MongoDB: {e}")
