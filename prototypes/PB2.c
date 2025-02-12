@@ -10,7 +10,7 @@ LOG_MODULE_REGISTER(ble_scanner, LOG_LEVEL_INF);
 #define UART_HEADER_LENGTH     4       /* Longitud de la cabecera */
 #define MSG_TYPE_ADV_DATA      0x01    /* Tipo mensaje: datos advertisement */
 #define MAX_DEVICES 50               /* Máximo número de dispositivos */
-#define SAMPLING_INTERVAL_MS 7000    /* Intervalo de muestreo: 3 segundos */
+#define SAMPLING_INTERVAL_MS 5000    /* Intervalo de muestreo: 3 segundos */
 #define HASH_SIZE 64                 /* Potencia de 2, mayor que 4/3 * MAX_DEVICES */
 #define HASH_MASK (HASH_SIZE - 1)    /* Máscara para operaciones módulo */
 
