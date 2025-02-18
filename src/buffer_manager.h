@@ -43,6 +43,7 @@ struct buffer_manager {
     uint8_t active_buffer;
     struct k_sem switch_lock;
     uint8_t msg_sequence;
+}
 
 
 

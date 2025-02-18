@@ -1,5 +1,9 @@
 {
     "nrf-connect.debugging.bindings": {
         "${workspaceFolder}/build_1": "Launch build_1"
+    },
+    "files.associations": {
+        "*.embeddedhtml": "html",
+        "compare": "cpp"
     }
 }
