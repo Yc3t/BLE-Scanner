@@ -1,236 +1,150 @@
-#include <zephyr/kernel.h>
-#include <zephyr/bluetooth/bluetooth.h>
-#include <zephyr/bluetooth/hci.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/drivers/uart.h>
+#include "ble_scanner.h"
+#include "buffer_manager.h"
+#include "chunk_protocol.h"
+#include "uart_handler.h"
 
 LOG_MODULE_REGISTER(ble_scanner, LOG_LEVEL_INF);
 
-#define UART_HEADER_MAGIC      0x55    /* Patrón de sincronización: 01010101 */
-#define UART_HEADER_LENGTH     4       /* Longitud de la cabecera */
-#define MSG_TYPE_ADV_DATA      0x01    /* Tipo mensaje: datos advertisement */
-#define MAX_DEVICES 50               /* Máximo número de dispositivos */
-#define SAMPLING_INTERVAL_MS 5000    /* Intervalo de muestreo: 3 segundos */
-#define HASH_SIZE 64                 /* Potencia de 2, mayor que 4/3 * MAX_DEVICES */
-#define HASH_MASK (HASH_SIZE - 1)    /* Máscara para operaciones módulo */
+/* Work item for buffer switching */
+static struct k_work_delayable buffer_switch_work;
 
-/* Estados posibles de cada entrada en la tabla hash */
-enum entry_state {
-    ENTRY_EMPTY,     // Slot nunca usado
-    ENTRY_OCCUPIED,  // Slot con datos válidos
-    ENTRY_DELETED    // Slot antes usadoo pero ahora borrado
+/* BLE scanning parameters */
+static struct bt_le_scan_param scan_param = {
+    .type = BT_LE_SCAN_TYPE_PASSIVE,
+    .options = BT_LE_SCAN_OPT_NONE,
+    .interval = BT_GAP_ADV_FAST_INT_MIN_2,
+    .window = BT_GAP_ADV_FAST_INT_MIN_2
 };
 
-struct __packed device_data {
-    uint8_t addr[6];          /* Dirección MAC */
-    uint8_t addr_type;        /* Tipo de dirección */
-    uint8_t adv_type;         /* Tipo de advertisement */
-    int8_t  rssi;            /* Valor RSSI */
-    uint8_t data_len;        /* Longitud de datos */
-    uint8_t data[31];        /* Datos del advertisement */
-    uint8_t n_adv;           /* Número de advertisements de esta MAC */
-};
+/* Work item for UART sending */
+static struct k_work uart_send_work;
+static struct ble_buffer *sending_buffer = NULL;
 
-/* Estructura de la cabecera del buffer */
-struct __packed buffer_header {
-    uint8_t header[UART_HEADER_LENGTH];    /* [0x55, 0x55, 0x55, 0x55] */
-    uint8_t sequence;                      /* Número de secuencia */
-    uint16_t n_adv_raw;                    /* Contador eventos de recepción */
-    uint8_t n_mac;                         /* Nº MACs únicas en buffer */
-};
-
-/* Estructura para cada entrada en la tabla hash */
-struct hash_entry {
-    enum entry_state state;
-    struct device_data device;
-};
-
-static struct hash_entry hash_table[HASH_SIZE];
-static struct buffer_header buffer_header;
-static bool buffer_active = false;
-static const struct device *uart_dev;
-static uint8_t msg_sequence = 0;
-static uint16_t hash_entries = 0;
-
-/* Calcular índice a partir de MAC */
-static uint32_t hash_mac(const uint8_t *mac) {
-    uint32_t hash = 0;
-    for (int i = 0; i < 6; i++) {
-        hash = (hash << 5) + hash + mac[i];  // hash * 33 + mac[i]
-    }
-    return hash & HASH_MASK;
-}
-
-/* Buscar o añadir dispositivo en la tabla hash */
-static struct device_data *find_or_add_device(const bt_addr_le_t *addr) {
-    uint32_t index = hash_mac(addr->a.val);
-    uint32_t original_index = index;
-    
-    do {
-        // Dispositivo encontrado
-        if (hash_table[index].state == ENTRY_OCCUPIED &&
-            memcmp(hash_table[index].device.addr, addr->a.val, 6) == 0) {
-            return &hash_table[index].device;
-        }
-        
-        // Slot libre encontrado
-        if (hash_table[index].state != ENTRY_OCCUPIED) {
-            // Verificar límites
-            if (buffer_header.n_mac >= 255) {
-                LOG_WRN("Buffer lleno: N_MAC = 255");
-                return NULL;
-            }
-            
-            if (hash_entries >= MAX_DEVICES) {
-                LOG_WRN("Buffer lleno: MAX_DEVICES alcanzado");
-                return NULL;
-            }
-            
-            // Insertar nuevo dispositivo
-            hash_table[index].state = ENTRY_OCCUPIED;
-            memcpy(hash_table[index].device.addr, addr->a.val, 6);
-            hash_table[index].device.n_adv = 0;
-            hash_entries++;
-            buffer_header.n_mac++;
-            return &hash_table[index].device;
-        }
-        
-        // Probar siguiente slot
-        index = (index + 1) & HASH_MASK;
-    } while (index != original_index);
-    
-    LOG_WRN("Tabla hash llena");
-    return NULL;
-}
-
+/* BLE scanning callback */
 static void scan_cb(const bt_addr_le_t *addr, int8_t rssi,
-                   uint8_t adv_type, struct net_buf_simple *buf)
-{
-    if (!buffer_active) {
+                   uint8_t adv_type, struct net_buf_simple *buf) {
+    struct ble_buffer *active = get_active_buffer();
+    
+    if (active->state != BUFFER_FILLING) {
         return;
     }
 
-    buffer_header.n_adv_raw++;
-
-    struct device_data *device = find_or_add_device(addr);
-    if (device == NULL) {
-        return;
+    k_sem_take(&active->lock, K_FOREVER);
+    
+    // Update raw advertisement counter
+    active->header.n_adv_raw++;
+    
+    // Find or add device to hash table
+    struct device_data *device = find_or_add_device(addr, active);
+    if (device) {
+        // Update device data
+        device->addr_type = addr->type;
+        device->adv_type = adv_type;
+        device->rssi = rssi;
+        device->data_len = MIN(buf->len, sizeof(device->data));
+        memcpy(device->data, buf->data, device->data_len);
+        device->n_adv++;
+        device->last_seen = k_uptime_get_32();
+        
+        // If buffer is full, trigger early switch
+        if (active->hash_entries >= MAX_DEVICES) {
+            k_work_reschedule(&buffer_switch_work, K_NO_WAIT);
+        }
     }
-
-    // Actualizar datos del dispositivo
-    device->addr_type = addr->type;
-    device->adv_type = adv_type;
-    device->rssi = rssi;
-    device->data_len = MIN(buf->len, sizeof(device->data));
-    memset(device->data, 0, sizeof(device->data));
-    memcpy(device->data, buf->data, device->data_len);
-    device->n_adv++;
+    
+    k_sem_give(&active->lock);
 }
 
-/* Enviar buffer por UART */
-static void send_buffer(void) {
-    // Enviar cabecera
-    const uint8_t *header_data = (const uint8_t *)&buffer_header;
-    for (size_t i = 0; i < sizeof(struct buffer_header); i++) {
-        uart_poll_out(uart_dev, header_data[i]);
-    }
+/* Buffer switch work handler */
+static void buffer_switch_handler(struct k_work *work) {
+    switch_buffers();
+    
+    // Schedule next switch
+    k_work_reschedule(&buffer_switch_work, 
+                      K_MSEC(SAMPLING_INTERVAL_MS));
+    
+    // Trigger send work for the filled buffer
+    k_work_submit(&uart_send_work);
+}
 
-    // Enviar solo entradas ocupadas
-    for (size_t i = 0; i < HASH_SIZE; i++) {
-        if (hash_table[i].state == ENTRY_OCCUPIED) {
-            const uint8_t *device_data = (const uint8_t *)&hash_table[i].device;
-            for (size_t j = 0; j < sizeof(struct device_data); j++) {
-                uart_poll_out(uart_dev, device_data[j]);
-            }
+/* UART send work handler */
+static void uart_send_handler(struct k_work *work) {
+    struct buffer_manager *mgr = get_buffer_manager();
+    
+    // Look for a buffer ready to send
+    for (int i = 0; i < 2; i++) {
+        struct ble_buffer *buf = &mgr->buffers[i];
+        if (buf->state == BUFFER_READY) {
+            sending_buffer = buf;
+            buf->state = BUFFER_SENDING;
+            
+            // Send buffer contents
+            send_buffer_chunked(buf);
+            
+            // Mark buffer as empty
+            reset_buffer(buf);
+            sending_buffer = NULL;
+            break;
         }
     }
 }
 
-/* Reset del buffer */
-static void reset_buffer(void) {
-    memset(&buffer_header, 0, sizeof(struct buffer_header));
-    memset(hash_table, 0, sizeof(hash_table));
-    memset(buffer_header.header, UART_HEADER_MAGIC, UART_HEADER_LENGTH);
-    buffer_header.sequence = msg_sequence++;
-    buffer_header.n_mac = 0;     // Explícito
-    buffer_header.n_adv_raw = 0; // Explícito
-    hash_entries = 0;
-}
-
-/* Manejador del timer de muestreo */
-static void sampling_timer_handler(struct k_work *work) {
-    buffer_active = false;
-    send_buffer();
-    reset_buffer();
-    buffer_active = true;
-}
-
-/* Work item para el timer */
-K_WORK_DEFINE(sampling_work, sampling_timer_handler);
-
-static void timer_expiry_function(struct k_timer *timer) {
-    k_work_submit(&sampling_work);
-}
-
-K_TIMER_DEFINE(sampling_timer, timer_expiry_function, NULL);
-
-/* Inicialización del UART */
-static int uart_init(void)
-{
-    uart_dev = DEVICE_DT_GET(DT_NODELABEL(uart0));
-    if (!device_is_ready(uart_dev)) {
-        LOG_ERR("UART no está listo");
-        return -1;
+/* Initialize BLE scanning */
+static int ble_init(void) {
+    int err = bt_enable(NULL);
+    if (err) {
+        LOG_ERR("Bluetooth init failed (err %d)", err);
+        return err;
     }
+
+    LOG_INF("Bluetooth initialized");
     return 0;
 }
 
-static struct bt_le_scan_param scan_param = {
-    .type       = BT_LE_SCAN_TYPE_PASSIVE,
-    .options    = BT_LE_SCAN_OPT_NONE,
-    .interval   = BT_GAP_ADV_FAST_INT_MIN_2,  // 0x00a0 (100ms)
-    .window     = BT_GAP_ADV_FAST_INT_MIN_2   // 0x00a0 (100ms)
-};
-
-/* Función principal */
-int main(void)
-{
+/* Main function */
+int main(void) {
     int err;
 
-    // Inicializar UART
+    LOG_INF("Starting BLE Scanner...");
+
+    // Initialize UART
     err = uart_init();
     if (err) {
-        LOG_ERR("Falló inicialización UART (err %d)", err);
+        LOG_ERR("UART init failed: %d", err);
         return err;
     }
 
-    LOG_INF("Iniciando Escáner BLE con buffer hash...");
-
-    // Inicializar Bluetooth
-    err = bt_enable(NULL);
+    // Initialize buffer manager
+    err = buffer_manager_init();
     if (err) {
-        LOG_ERR("Falló inicialización Bluetooth (err %d)", err);
+        LOG_ERR("Buffer manager init failed: %d", err);
         return err;
     }
 
-    // Preparar buffer y comenzar escaneo
-    reset_buffer();
-    buffer_active = true;
+    // Initialize BLE
+    err = ble_init();
+    if (err) {
+        return err;
+    }
 
-    // Iniciar timer de muestreo
-    k_timer_start(&sampling_timer, K_MSEC(SAMPLING_INTERVAL_MS), 
-                 K_MSEC(SAMPLING_INTERVAL_MS));
+    // Initialize work items
+    k_work_init_delayable(&buffer_switch_work, buffer_switch_handler);
+    k_work_init(&uart_send_work, uart_send_handler);
 
-    // Comenzar escaneo BLE
+    // Start BLE scanning
     err = bt_le_scan_start(&scan_param, scan_cb);
     if (err) {
-        LOG_ERR("Falló inicio de escaneo (err %d)", err);
+        LOG_ERR("Scanning failed to start (err %d)", err);
         return err;
     }
 
-    LOG_INF("Escaneo iniciado exitosamente");
+    LOG_INF("Scanning successfully started");
 
-    // Bucle principal
+    // Schedule first buffer switch
+    k_work_reschedule(&buffer_switch_work, 
+                      K_MSEC(SAMPLING_INTERVAL_MS));
+
+    // Main loop
     while (1) {
         k_sleep(K_SECONDS(1));
     }

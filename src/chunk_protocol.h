@@ -3,35 +3,45 @@
 
 #include "buffer_manager.h"
 
-#define CHUNK_SIZE      128
-#define MAX_RETRIES     3
-#define ACK_TIMEOUT_MS  1000
+/* Chunk Configuration */
+#define CHUNK_SIZE              128   /* Maximum chunk size */
+#define MAX_RETRIES            3     /* Maximum transmission retries */
+#define ACK_TIMEOUT_MS         100   /* Acknowledgment timeout */
 
-
-//maximum devices per chunk
-
-#define CHUNK_HEADER_SIZE   8
-#define CHUNK_CRC_SIZE      2
-#define CHUNK_PAYLOAD_SIZE (CHUNK_SIZE - CHUNK_HEADER_SIZE - CHUNK_CRC_SIZE)
+/* Calculate maximum devices per chunk */
+#define CHUNK_HEADER_SIZE      8
+#define CHUNK_CRC_SIZE        2
+#define CHUNK_PAYLOAD_SIZE    (CHUNK_SIZE - CHUNK_HEADER_SIZE - CHUNK_CRC_SIZE)
 #define MAX_DEVICES_PER_CHUNK (CHUNK_PAYLOAD_SIZE / sizeof(struct device_data))
 
+/* Chunk Types */
 enum chunk_type {
-    CHUNK_TYPE_START = 0X01,
-    CHUNK_TYPE_DATA = 0X02,
-    CHUNK_TYPE_END = 0X03,
-    CHUNK_TYPE_ACK = 0X04,
-    CHUNK_TYPE_NACK = 0x05
-}
+    CHUNK_TYPE_START = 0x01,
+    CHUNK_TYPE_DATA  = 0x02,
+    CHUNK_TYPE_END   = 0x03,
+    CHUNK_TYPE_ACK   = 0x04,
+    CHUNK_TYPE_NACK  = 0x05
+};
 
-// chunk header structure
+/* Chunk Header Structure */
+struct __packed chunk_header {
+    uint8_t start_marker;      /* Always 0x55 */
+    uint8_t type;             /* Chunk type */
+    uint8_t sequence;         /* Sequence number */
+    uint8_t n_devices;        /* Number of devices in chunk */
+    uint16_t total_devices;   /* Total devices in message */
+    uint16_t chunk_offset;    /* Chunk number */
+};
 
-struct __packed chunk{
+/* Complete Chunk Structure */
+struct __packed chunk {
     struct chunk_header header;
-    struct device_data devices[MAX_DEVICES_PER_CHUNK]
+    struct device_data devices[MAX_DEVICES_PER_CHUNK];
     uint16_t crc;
-}
+};
 
+/* Function Declarations */
 void send_buffer_chunked(struct ble_buffer *buffer);
-uint16_t calculate_crc16(const uint8_t *data,size_t length);
+uint16_t calculate_crc16(const uint8_t *data, size_t length);
 
-#endif
+#endif /* CHUNK_PROTOCOL_H */
