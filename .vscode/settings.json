@@ -4,6 +4,7 @@
     },
     "files.associations": {
         "*.embeddedhtml": "html",
-        "compare": "cpp"
+        "compare": "cpp",
+        "bluetooth.h": "c"
     }
 }
